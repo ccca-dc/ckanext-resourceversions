@@ -19,7 +19,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     def before_update(self, context, current, resource):
         # toolkit.check_access('package_update', context, resource)
         pkg = toolkit.get_action('package_show')(context, {'id': resource['package_id']})
-        if pkg['private'] is False and 'upload' in resource and (resource['upload'] != "" or "/" in resource['url'] and current['url'] != resource['url']):
+        if resource['newerVersion'] == "" and pkg['private'] is False and 'upload' in resource and (resource['upload'] != "" or "/" in resource['url'] and current['url'] != resource['url']):
             # create new resource with the new file/link
             global new_res_version
             new_res_version = resource.copy()
@@ -34,7 +34,9 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     def after_update(self, context, resource):
         # add new version to package
         pkg = toolkit.get_action('package_show')(context, {'id': resource['package_id']})
-        if pkg['private'] is False and 'newerVersion' not in resource:
+        print(pkg['private'] is False)
+        if pkg['private'] is False and resource['newerVersion'] == "":
+            print("inside")
             new = toolkit.get_action('resource_create')(context, new_res_version)
             resource['newerVersion'] = new['id']
             toolkit.get_action('resource_update')(context, resource)
