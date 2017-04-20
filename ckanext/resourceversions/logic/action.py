@@ -20,10 +20,14 @@ def package_resources_list(context, data_dict):
 
     resources = package['resources']
 
+    newest_versions = []
+
     if all_versions is False:
         for resource in resources:
-            if 'newerVersion' in resource and resource['newerVersion'] != '':
-                print("true")
-                resources.remove(resource)
-
+            print(resource['name'])
+            if 'newerVersion' not in resource or resource['newerVersion'] == '':
+                newest_versions.append(resource)
+                
+    if newest_versions != []:
+        return newest_versions
     return resources
