@@ -18,7 +18,7 @@
       <blockquote>{{ h.markdown_extract(h.get_translated(c.package, 'notes')) }}</blockquote>
       <p>{% trans dataset=c.package.title, url=h.url_for(controller='package', action='read', id=c.package['name']) %}Source: <a href="{{ url }}">{{ dataset }}</a>{% endtrans %}
     {% endif %}
-    {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=res.newerVersion) %}
-    <p>Newer Version: <a href="{{ url }}">{{ res.newerVersion }}</a></p>
+    {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=h.get_versions_list(res.id, c.package['id'])) %}
+    <p>Older Version: <a href="{{ url }}">{{ h.get_versions_list(res.id, c.package['id']) }}</a></p>
   </div>
 {% endblock %}

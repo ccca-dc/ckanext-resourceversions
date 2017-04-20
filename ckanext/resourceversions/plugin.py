@@ -1,10 +1,12 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckanext.resourceversions import helpers
 
 
 class ResourceversionsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IResourceController, inherit=True)
+    plugins.implements(plugins.ITemplateHelpers)
 
     # IConfigurer
 
@@ -40,3 +42,9 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             new = toolkit.get_action('resource_create')(context, new_res_version)
             resource['newerVersion'] = new['id']
             toolkit.get_action('resource_update')(context, resource)
+
+    # ITemplateHelpers
+    def get_helpers(self):
+        return {
+            'get_versions_list': helpers.get_versions_list
+            }
