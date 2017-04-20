@@ -17,14 +17,18 @@ def get_versions_list(resource_id, package_id):
     resource = logic.get_action('resource_show')(ctx, {'id': resource_id})
     resource_list = pkg['resources']
 
-    res_helper = resource
     versions = []
-    while res_helper is not None:
-        res_helper_id = res_helper['id']
-        res_helper = None
+    while resource is not None:
+        res_id = resource['id']
+        resource = None
         for res in resource_list:
-            if 'newerVersion' in res and res['newerVersion'] == res_helper_id:
+            if 'newerVersion' in res and res['newerVersion'] == res_id:
                 versions.append({'id': res['id'], 'name': res['name']})
-                res_helper = res.copy()
+                resource = res.copy()
                 break
     return versions
+
+
+def package_resources_list(package_id):
+    ctx = {'model': model}
+    return logic.get_action('package_resources_list')(ctx, {'id': package_id})

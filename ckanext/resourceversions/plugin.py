@@ -1,12 +1,14 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.resourceversions import helpers
+import ckanext.resourceversions.logic.action as action
 
 
 class ResourceversionsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IResourceController, inherit=True)
     plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.IActions)
 
     # IConfigurer
 
@@ -46,5 +48,11 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'get_versions_list': helpers.get_versions_list
+            'get_versions_list': helpers.get_versions_list,
+            'package_resources_list': helpers.package_resources_list
             }
+
+    # IActions
+    def get_actions(self):
+        actions = {'package_resources_list': action.package_resources_list}
+        return actions
