@@ -48,13 +48,16 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'get_versions_list': helpers.get_versions_list,
+            'get_older_versions': helpers.get_older_versions,
             'package_resources_list': helpers.package_resources_list
             }
 
     # IActions
     def get_actions(self):
-        actions = {'package_resources_list': action.package_resources_list}
+        actions = {
+            'package_resources_list': action.package_resources_list,
+            'resource_version_number': action.resource_version_number
+            }
         return actions
 
     # IAuthFunctions

@@ -10,7 +10,7 @@ Base_c = base.c
 global_contains_field = []
 
 
-def get_versions_list(resource_id, package_id):
+def get_older_versions(resource_id, package_id):
     ctx = {'model': model}
 
     pkg = logic.get_action('package_show')(ctx, {'id': package_id})
@@ -23,7 +23,7 @@ def get_versions_list(resource_id, package_id):
         resource = None
         for res in resource_list:
             if 'newerVersion' in res and res['newerVersion'] == res_id:
-                versions.append({'id': res['id'], 'name': res['name']})
+                versions.insert(0, {'id': res['id'], 'name': res['name']})
                 resource = res.copy()
                 break
     return versions
