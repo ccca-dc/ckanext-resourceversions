@@ -27,24 +27,24 @@ def get_older_versions(resource_id, package_id):
         res_helper = None
         for res in resource_list:
             if 'newerVersion' in res and res['newerVersion'] == res_id:
-                versions.insert(0, {'id': res['id'], 'created': isodate(res['created'], ctx), 'current': False})
+                versions.append({'id': res['id'], 'created': isodate(res['created'], ctx), 'current': False})
                 res_helper = res.copy()
                 break
 
     # get newer versions
-    versions.append({'id': resource['id'], 'created': isodate(resource['created'], ctx), 'current': True})
+    versions.insert(0, {'id': resource['id'], 'created': isodate(resource['created'], ctx), 'current': True})
 
     if 'newerVersion' in resource and resource['newerVersion'] != "":
         newest_resource = tk.get_action('resource_show')(data_dict={'id': resource['newerVersion']})
 
-        versions.append({'id': newest_resource['id'], 'created': isodate(newest_resource['created'], ctx), 'current': False})
+        versions.insert(0, {'id': newest_resource['id'], 'created': isodate(newest_resource['created'], ctx), 'current': False})
 
         has_newer_version = True
         while has_newer_version is True:
             has_newer_version = False
             for res in resource_list:
                 if 'newerVersion' in newest_resource and newest_resource['newerVersion'] == res['id']:
-                    versions.append({'id': res['id'], 'created': isodate(res['created'], ctx), 'current': False})
+                    versions.insert(0, {'id': res['id'], 'created': isodate(res['created'], ctx), 'current': False})
                     newest_resource = res.copy()
                     has_newer_version = True
                     break
