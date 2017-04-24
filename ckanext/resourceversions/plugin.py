@@ -3,6 +3,7 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.resourceversions import helpers
 import ckanext.resourceversions.logic.action as action
 from ckanext.resourceversions.logic.auth.delete import package_delete
+from ckanext.resourceversions.logic.auth.update import resource_update
 
 
 class ResourceversionsPlugin(plugins.SingletonPlugin):
@@ -31,16 +32,18 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             new_res_version = resource.copy()
             new_res_version.pop('id', None)
             new_res_version['package_id'] = current['package_id']
-            new_res_version['name'] = "new version"
 
             # change the resource that will be updated to the old version
             resource.clear()
             resource.update(current.copy())
+        else:
+            new_res_version = ""
 
     def after_update(self, context, resource):
         # add new version to package
-        pkg = toolkit.get_action('package_show')(context, {'id': resource['package_id']})
-        if pkg['private'] is False and resource['newerVersion'] == "":
+        global new_res_version
+
+        if new_res_version != "":
             new = toolkit.get_action('resource_create')(context, new_res_version)
             resource['newerVersion'] = new['id']
             toolkit.get_action('resource_update')(context, resource)
@@ -64,5 +67,6 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     def get_auth_functions(self):
         """Implements IAuthFunctions.get_auth_functions"""
         return {
-            'package_delete': package_delete
+            'package_delete': package_delete,
+            'resource_update': resource_update
             }
