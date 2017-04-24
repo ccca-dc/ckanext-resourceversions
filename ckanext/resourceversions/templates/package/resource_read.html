@@ -43,12 +43,23 @@
       <p>{% trans dataset=c.package.title, url=h.url_for(controller='package', action='read', id=c.package['name']) %}Source: <a href="{{ url }}">{{ dataset }}</a>{% endtrans %}
     {% endif %}
     {% set versions = h.get_older_versions(res.id, c.package['id']) %}
+    <h3>{{ _('This Version') }}</h3>
+    {% for version in versions if version['current'] == True %}
+        <p>Version {{ versions.index(version) + 1 }} &emsp;<b>Release Date:</b> {{ version['created']}}</p>
+    {% endfor %}
+    <h3>{{ _('Latest Version') }}</h3>
+    {% set latest_version = versions|last %}
+    {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=latest_version['id']) %}
+    <p><a href="{{ url }}">Version {{ versions|length }}</a>&emsp;<b>Release Date:</b> {{ latest_version['created'] }}</p>
     {% if versions|length > 0 %}
-        <h3>{{ _('Previous Versions') }}</h3>
-        {% for version in versions %}
-            {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=version['id']) %}
-            <p>Version {{ loop.index }}: <a href="{{ url }}">{{ version['name'] }}</a></p>
-        {% endfor %}
+    <a href="#demo" class="btn" data-toggle="collapse">Show All Versions</a>
+      <div id="demo" class="collapse">
+          <br>
+          {% for version in versions %}
+              {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=version['id']) %}
+              <p><a href="{{ url }}">Version {{ loop.index }}</a>&emsp;<b>Release Date:</b> {{ version['created'] }}</p>
+          {% endfor %}
+      </div>
+    <br>
     {% endif %}
-  </div>
 {% endblock %}
