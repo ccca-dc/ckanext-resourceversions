@@ -19,7 +19,7 @@ def package_resources_list(context, data_dict):
 
     if all_versions is False:
         for resource in resources:
-            if 'newerVersion' not in resource or resource['newerVersion'] == '':
+            if 'newer_version' not in resource or resource['newer_version'] == '':
                 newest_versions.append(resource)
 
     if newest_versions != []:
@@ -44,7 +44,7 @@ def resource_version_number(context, data_dict):
     while has_older_version is True:
         has_older_version = False
         for res in resources:
-            if 'newerVersion' in res and res['newerVersion'] == oldest_resource['id']:
+            if 'newer_version' in res and res['newer_version'] == oldest_resource['id']:
                 versions.insert(0, res['id'])
                 oldest_resource = res.copy()
                 has_older_version = True

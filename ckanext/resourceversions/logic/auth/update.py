@@ -19,7 +19,7 @@ def resource_update(context, data_dict):
         )
 
     # check if resource has a newer version
-    if 'newerVersion' in resource.extras and resource.extras['newerVersion'] != "":
+    if 'newer_version' in resource.extras and resource.extras['newer_version'] != "":
         return {'success': False, 'msg': 'Older versions cannot be updated'}
 
     pkg_dict = {'id': pkg.id}

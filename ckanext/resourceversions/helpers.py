@@ -3,7 +3,6 @@ import ckan.lib.base as base
 
 import ckan.model as model
 import ckan.logic as logic
-from datetime import datetime
 
 from ckan.logic.validators import isodate
 
@@ -21,21 +20,24 @@ def get_older_versions(resource_id, package_id):
     resource_list = pkg['resources']
 
     versions = []
+
+    # get older versions
     res_helper = resource.copy()
     while res_helper is not None:
         res_id = res_helper['id']
         res_helper = None
         for res in resource_list:
-            if 'newerVersion' in res and res['newerVersion'] == res_id:
+            if 'newer_version' in res and res['newer_version'] == res_id:
                 versions.append({'id': res['id'], 'created': isodate(res['created'], ctx), 'current': False})
                 res_helper = res.copy()
                 break
 
-    # get newer versions
+    # get this version
     versions.insert(0, {'id': resource['id'], 'created': isodate(resource['created'], ctx), 'current': True})
 
-    if 'newerVersion' in resource and resource['newerVersion'] != "":
-        newest_resource = tk.get_action('resource_show')(data_dict={'id': resource['newerVersion']})
+    # get newer versions
+    if 'newer_version' in resource and resource['newer_version'] != "":
+        newest_resource = tk.get_action('resource_show')(data_dict={'id': resource['newer_version']})
 
         versions.insert(0, {'id': newest_resource['id'], 'created': isodate(newest_resource['created'], ctx), 'current': False})
 
@@ -43,7 +45,7 @@ def get_older_versions(resource_id, package_id):
         while has_newer_version is True:
             has_newer_version = False
             for res in resource_list:
-                if 'newerVersion' in newest_resource and newest_resource['newerVersion'] == res['id']:
+                if 'newer_version' in newest_resource and newest_resource['newer_version'] == res['id']:
                     versions.insert(0, {'id': res['id'], 'created': isodate(res['created'], ctx), 'current': False})
                     newest_resource = res.copy()
                     has_newer_version = True
