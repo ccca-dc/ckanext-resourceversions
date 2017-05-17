@@ -26,7 +26,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     def before_update(self, context, current, resource):
         # toolkit.check_access('package_update', context, resource)
         pkg = toolkit.get_action('package_show')(context, {'id': resource['package_id']})
-        if resource['newer_version'] == "" and pkg['private'] is False and 'upload' in resource and (resource['upload'] != "" or "/" in resource['url'] and current['url'] != resource['url']):
+        if resource.get('newer_version','') == "" and pkg['private'] is False and 'upload' in resource and (resource['upload'] != "" or "/" in resource['url'] and current['url'] != resource['url']):
             # create new resource with the new file/link
             global new_res_version
             new_res_version = resource.copy()
