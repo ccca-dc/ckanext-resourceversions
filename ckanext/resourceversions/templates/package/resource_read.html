@@ -20,28 +20,46 @@
       <blockquote>{{ h.markdown_extract(h.get_translated(c.package, 'notes')) }}</blockquote>
       <p>{% trans dataset=c.package.title, url=h.url_for(controller='package', action='read', id=c.package['name']) %}Source: <a href="{{ url }}">{{ dataset }}</a>{% endtrans %}</p>
     {% endif %}
+
+    {% set parent_resource = h.get_parent_resource(res) %}
+    {% if parent_resource != None %}
+        <h3>Subset</h3>
+        <div id="subset">
+            {% set url=h.url_for(controller='package', action='resource_read',id=parent_resource.package_id, resource_id=parent_resource.id) %}
+            <p>This resource is a subset of <a href="{{ url }}">{{ parent_resource.name }}</a></p>
+            {% set newest_subset_version=h.get_newest_version(res.id) %}
+            {% set newest_parent_version=h.get_newest_version(res.subset_of) %}
+            {% if newest_subset_version.subset_of != newest_parent_version.id %}
+                <p>There is a newer version of the original resource available. Do you want to create a new version of your subset?
+                {% link_for _('Update'), controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController', action='create_new_version_of_subset', resource_id=res.id, class_='btn' %}
+                </p>
+            {% endif %}
+        </div>
+    {% endif %}
+
     <h3 href="#versions" class="btn" data-toggle="collapse">Versions</h3>
     <div id="versions" class="collapse">
-        {% set versions = h.get_older_versions(res.id, c.package['id']) %}
+        {% set versions = h.get_versions(res.id) %}
         <h4>{{ _('This Version') }}</h4>
-        {% for version in versions if version['current'] == True %}
-            <p>Version {{ versions|length - versions.index(version) }}&emsp;<b>Release Date:</b> {{ version['created']}}</p>
+        {% for version in versions %}
+            {% if version['id'] == res.id %}
+                <p>Version {{ versions|length - versions.index(version) }}&emsp;<b>Release Date:</b> {{ h.date_str_to_datetime(version['created']) }}</p>
+            {% endif %}
         {% endfor %}
         <h4>{{ _('Latest Version') }}</h4>
         {% set latest_version = versions|first %}
         {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=latest_version['id']) %}
-        <p><a href="{{ url }}">Version {{ versions|length }}</a>&emsp;<b>Release Date:</b> {{ latest_version['created'] }}</p>
-        {% if versions|length > 0 %}
+        <p><a href="{{ url }}">Version {{ versions|length }}</a>&emsp;<b>Release Date:</b> {{ h.date_str_to_datetime(latest_version['created']) }}</p>
+        {% if versions|length > 1 %}
         <a href="#history" class="btn" data-toggle="collapse">Show History</a>
           <div id="history" class="collapse">
               <br>
               {% for version in versions %}
                   {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=version['id']) %}
-                  <p><a href="{{ url }}">Version {{ versions|length + 1 - loop.index }}</a>&emsp;<b>Release Date:</b> {{ version['created'] }}</p>
+                  <p><a href="{{ url }}">Version {{ versions|length + 1 - loop.index }}</a>&emsp;<b>Release Date:</b> {{ h.date_str_to_datetime(version['created']) }}</p>
               {% endfor %}
           </div>
+        {% endif %}
         <br>
     </div>
-    <br>
-    {% endif %}
 {% endblock %}

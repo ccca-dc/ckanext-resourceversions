@@ -1,6 +1,7 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.resourceversions import helpers
+import ckan.lib.helpers as h
 import ckanext.resourceversions.logic.action as action
 from ckanext.resourceversions.logic.auth.delete import package_delete
 from ckanext.resourceversions.logic.auth.update import resource_update
@@ -12,6 +13,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
+    plugins.implements(plugins.IRoutes, inherit=True)
 
     # IConfigurer
 
@@ -47,12 +49,14 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             new = toolkit.get_action('resource_create')(context, new_res_version)
             resource['newer_version'] = new['id']
             toolkit.get_action('resource_update')(context, resource)
+            h.flash_notice('New version has been created.')
 
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'get_older_versions': helpers.get_older_versions,
-            'package_resources_list': helpers.package_resources_list
+            'get_versions': helpers.get_versions,
+            'package_resources_list': helpers.package_resources_list,
+            'get_newest_version': helpers.get_newest_version
             }
 
     # IActions
@@ -70,3 +74,11 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             'package_delete': package_delete,
             'resource_update': resource_update
             }
+
+    # IRoutes
+    def before_map(self, map):
+        # image upload
+        map.connect('create_new_version_of_subset', '/create_new_version_of_subset/{resource_id}',
+                    controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController',
+                    action='create_new_version_of_subset')
+        return map
