@@ -18,23 +18,7 @@
     {% if not res.description and c.package.notes %}
       <h3>{{ _('From the dataset abstract') }}</h3>
       <blockquote>{{ h.markdown_extract(h.get_translated(c.package, 'notes')) }}</blockquote>
-      <p>{% trans dataset=c.package.title, url=h.url_for(controller='package', action='read', id=c.package['name']) %}Source: <a href="{{ url }}">{{ dataset }}</a>{% endtrans %}</p>
-    {% endif %}
-
-    {% set parent_resource = h.get_parent_resource(res) %}
-    {% if parent_resource != None %}
-        <h3>Subset</h3>
-        <div id="subset">
-            {% set url=h.url_for(controller='package', action='resource_read',id=parent_resource.package_id, resource_id=parent_resource.id) %}
-            <p>This resource is a subset of <a href="{{ url }}">{{ parent_resource.name }}</a></p>
-            {% set newest_subset_version=h.get_newest_version(res.id) %}
-            {% set newest_parent_version=h.get_newest_version(res.subset_of) %}
-            {% if newest_subset_version.subset_of != newest_parent_version.id %}
-                <p>There is a newer version of the original resource available. Do you want to create a new version of this subset?
-                {% link_for _('Update'), controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController', action='create_new_version_of_subset', resource_id=res.id, class_='btn' %}
-                </p>
-            {% endif %}
-        </div>
+      <p>{% trans dataset=c.package.title, url=h.url_for(controller='package', action='read', id=c.package['name']) %}Datapackage: <a href="{{ url }}">{{ dataset }}</a>{% endtrans %}</p>
     {% endif %}
 
     <h3 href="#versions" class="btn" data-toggle="collapse">Versions</h3>
@@ -81,4 +65,44 @@
         {% endif %}
         <br>
     </div>
+
+    {% set parent_resource = h.get_parent_resource(res) %}
+    {% if parent_resource != None %}
+        <h3>Subset</h3>
+        <div id="subset">
+            {% set url=h.url_for(controller='package', action='resource_read',id=parent_resource.package_id, resource_id=parent_resource.id) %}
+            <p>This resource is a subset of <a href="{{ url }}">{{ parent_resource.name }}</a></p>
+            {% set newest_subset_version=h.get_newest_version(res.id) %}
+            {% set newest_parent_version=h.get_newest_version(res.subset_of) %}
+            {% if newest_subset_version.subset_of != newest_parent_version.id %}
+                <p>There is a newer version of the original resource available. Do you want to create a new version of this subset?
+                {% link_for _('Update'), controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController', action='create_newest_version_of_subset', resource_id=res.id, class_='btn' %}
+                </p>
+            {% endif %}
+            {% set orig_versions = h.get_versions(res.subset_of) %}
+            {% if orig_versions|length > 1 %}
+                <p>Do you want to create a different version of this subset from the original resource?
+                <a href="#orig_versions" class="btn" data-toggle="collapse">Show available versions</a></p>
+                  <div id="orig_versions" class="collapse">
+                      <table class="orig_versiontable">
+                          {% for version in orig_versions %}
+                              {% set url=h.url_for(controller='package', action='resource_read', id=version['package_id'], resource_id=version['id']) %}
+                              <tr>
+                                  <td><a href="{{ url }}">Version {{ orig_versions|length + 1 - loop.index }}</a></td>
+                                  <td><b>Release Date:</b> {{ h.date_str_to_datetime(version['created']) }}</td>
+                                  {% set subset_version = h.subset_has_version(res.id, version['id']) %}
+                                  {% if subset_version == None %}
+                                    <td>{% link_for _('Add'), controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController', action='create_new_version_of_subset', subset_id=res.id, orig_id=version['id'], class_='btn' %}</td>
+                                    </p>
+                                  {% else %}
+                                    {% set url=h.url_for(controller='package', action='resource_read', id=c.package['name'], resource_id=subset_version['id']) %}
+                                    <td>Already added: <a href="{{ url }}">{{ subset_version['name'] }}</a></td>
+                                  {% endif %}
+                              </tr>
+                          {% endfor %}
+                      </table>
+                  </div>
+            {% endif %}
+        </div>
+    {% endif %}
 {% endblock %}

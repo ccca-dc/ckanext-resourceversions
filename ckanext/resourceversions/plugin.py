@@ -56,7 +56,8 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         return {
             'get_versions': helpers.get_versions,
             'package_resources_list': helpers.package_resources_list,
-            'get_newest_version': helpers.get_newest_version
+            'get_newest_version': helpers.get_newest_version,
+            'subset_has_version': helpers.subset_has_version
             }
 
     # IActions
@@ -77,8 +78,10 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
 
     # IRoutes
     def before_map(self, map):
-        # image upload
-        map.connect('create_new_version_of_subset', '/create_new_version_of_subset/{resource_id}',
+        map.connect('create_newest_version_of_subset', '/create_newest_version_of_subset/{resource_id}',
+                    controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController',
+                    action='create_newest_version_of_subset')
+        map.connect('create_new_version_of_subset', '/create_new_version_of_subset/{subset_id}/{orig_id}',
                     controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController',
                     action='create_new_version_of_subset')
         return map

@@ -80,3 +80,12 @@ def get_newest_version(resource_id):
                     break
 
     return newest_resource
+
+def subset_has_version(subset_id, original_id):
+    subset_versions = get_versions(subset_id)
+
+    for subset in subset_versions:
+        if 'subset_of' in subset and subset['subset_of'] == original_id:
+            return subset
+
+    return None
