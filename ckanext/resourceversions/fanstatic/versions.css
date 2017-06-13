@@ -4,3 +4,7 @@
 #subset {
     margin-left:20px;
 }
+.versiontable td {
+    padding-right: 20px;
+    padding-bottom: 5px;
+}
