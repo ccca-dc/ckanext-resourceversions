@@ -51,7 +51,7 @@ class SubsetVersionController(base.BaseController):
             # create new URL with newest resource_id
             old_url = old_subset['url']
             newest_id = original_new_ver['id']
-            new_url = self._create_new_url(old_url, newest_id)
+            new_url = self.create_new_url(old_url, newest_id)
 
             new_subset = tk.get_action('resource_create')(context, {'name': old_subset['name'], 'url': new_url, 'package_id': old_subset['package_id'], 'format': old_subset['format'], 'subset_of': newest_id})
             subset_new_ver['newer_version'] = new_subset['id']
