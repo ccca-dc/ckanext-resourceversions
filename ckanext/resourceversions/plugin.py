@@ -32,8 +32,9 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         global new_res_version
 
         # "None" if call comes from before_delete
-        if new_res_version is not None:
-            if ('newer_version' not in resource or resource['newer_version'] == "") and pkg['private'] is False and 'upload' in resource and (resource['upload'] != "" or "/" in resource['url'] and current['url'] != resource['url']):
+        # subsets should not create versions that are not from the original
+        if new_res_version is not None and ('subset_of' not in resource or resource['subset_of'] == ""):
+            if ('newer_version' not in resource or resource['newer_version'] == "") and pkg['private'] is False and ('upload' in resource and resource['upload'] != "" or "/" in resource['url'] and current['url'] != resource['url']):
                 # create new resource with the new file/link
                 new_res_version = resource.copy()
                 new_res_version.pop('id', None)
@@ -44,12 +45,14 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                 resource.update(current.copy())
             else:
                 new_res_version = ""
+        else:
+            new_res_version = ""
 
     def after_update(self, context, resource):
         # add new version to package
         global new_res_version
 
-        if new_res_version != "" and new_res_version is not None:
+        if new_res_version != "":
             new = toolkit.get_action('resource_create')(context, new_res_version)
             resource['newer_version'] = new['id']
             toolkit.get_action('resource_update')(context, resource)

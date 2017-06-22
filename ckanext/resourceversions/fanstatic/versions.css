@@ -9,7 +9,5 @@
     padding-bottom: 5px;
 }
 .orig_versiontable td, th {
-    padding-right: 20px;
-    padding-bottom: 20px;
-    text-align:center;
+     vertical-align: middle;
 }

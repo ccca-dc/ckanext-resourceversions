@@ -18,9 +18,13 @@ def resource_update(context, data_dict):
             _('No package found for this resource, cannot check auth.')
         )
 
-    # check if resource has a newer version
-    if 'newer_version' in resource.extras and resource.extras['newer_version'] != "":
-        return {'success': False, 'msg': 'Older versions cannot be updated'}
+    if 'upload' in data_dict and data_dict['upload'] != "" or "/" in data_dict['url'] and data_dict['url'] != resource.url:
+        # check if resource has a newer version
+        if 'newer_version' in resource.extras and resource.extras['newer_version'] != "":
+            return {'success': False, 'msg': 'Older versions cannot be updated'}
+        # check if this is a subset, then it cannot create a new version like that
+        if 'subset_of' in resource.extras and resource.extras['subset_of'] != "":
+            return {'success': False, 'msg': 'Please create only new versions from the original resource'}
 
     pkg_dict = {'id': pkg.id}
     authorized = authz.is_authorized('package_update', context, pkg_dict).get('success')
