@@ -18,7 +18,11 @@ def resource_update(context, data_dict):
             _('No package found for this resource, cannot check auth.')
         )
 
-    if 'upload' in data_dict and data_dict['upload'] != "" or "/" in data_dict['url'] and data_dict['url'] != resource.url:
+    upload = False
+    if 'upload' in data_dict and data_dict['upload'] != "" or 'upload_local' in data_dict and data_dict['upload_local'] != "" or 'upload_remote' in data_dict and data_dict['upload_remote'] != "":
+        upload = True
+
+    if upload or "/" in data_dict['url'] and data_dict['url'] != resource.url:
         # check if resource has a newer version
         if 'newer_version' in resource.extras and resource.extras['newer_version'] != "":
             return {'success': False, 'msg': 'Older versions cannot be updated'}
