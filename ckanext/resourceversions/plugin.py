@@ -38,7 +38,11 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                 # create new resource with the new file/link
                 new_res_version = resource.copy()
                 new_res_version.pop('id', None)
-                new_res_version['package_id'] = current['package_id']
+                new_res_version.pop('hash', None)
+                new_res_version.pop('iso_resourceURI', None)
+                new_res_version.pop('revision_id', None)
+                new_res_version.pop('size', None)
+                new_res_version.pop('created', None)
 
                 # change the resource that will be updated to the old version
                 resource.clear()
