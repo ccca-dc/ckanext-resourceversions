@@ -61,6 +61,17 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             new = toolkit.get_action('resource_create')(context, new_res_version)
             resource['newer_version'] = new['id']
             toolkit.get_action('resource_update')(context, resource)
+
+            # create same views
+            views = toolkit.get_action('resource_view_list')(context, {'id': resource['id']})
+            for view in views:
+                duplicate_view = dict()
+                duplicate_view['resource_id'] = new['id']
+                duplicate_view['title'] = view['title']
+                duplicate_view['description'] = view['description']
+                duplicate_view['view_type'] = view['view_type']
+                toolkit.get_action('resource_view_create')(context, duplicate_view)
+
             h.flash_notice('New version has been created.')
 
     def before_delete(self, context, resource, resources):
