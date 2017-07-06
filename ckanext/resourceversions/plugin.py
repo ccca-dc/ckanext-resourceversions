@@ -5,6 +5,7 @@ import ckan.lib.helpers as h
 import ckanext.resourceversions.logic.action as action
 from ckanext.resourceversions.logic.auth.delete import package_delete
 from ckanext.resourceversions.logic.auth.update import resource_update
+from ckanext.resourceversions.logic.auth.update import package_update
 
 
 class ResourceversionsPlugin(plugins.SingletonPlugin):
@@ -101,6 +102,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         """Implements IAuthFunctions.get_auth_functions"""
         return {
             'package_delete': package_delete,
+            'package_update': package_update,
             'resource_update': resource_update
             }
 
