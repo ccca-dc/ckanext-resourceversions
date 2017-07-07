@@ -64,13 +64,13 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
 
             # create same views
             views = toolkit.get_action('resource_view_list')(context, {'id': resource['id']})
+            default_views = toolkit.get_action('resource_view_list')(context, {'id': new['id']})
             for view in views:
-                duplicate_view = dict()
-                duplicate_view['resource_id'] = new['id']
-                duplicate_view['title'] = view['title']
-                duplicate_view['description'] = view['description']
-                duplicate_view['view_type'] = view['view_type']
-                toolkit.get_action('resource_view_create')(context, duplicate_view)
+                if not any(d['view_type'] == view['view_type'] for d in default_views):
+                    view.pop('id')
+                    view.pop('package_id')
+                    view['resource_id'] = new['id']
+                    toolkit.get_action('resource_view_create')(context, view)
 
             h.flash_notice('New version has been created.')
 
