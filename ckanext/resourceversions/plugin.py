@@ -66,7 +66,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             views = toolkit.get_action('resource_view_list')(context, {'id': resource['id']})
             default_views = toolkit.get_action('resource_view_list')(context, {'id': new['id']})
             for view in views:
-                if not any(d['view_type'] == view['view_type'] for d in default_views):
+                if view['view_type'] != "gallery_view" and not any(d['view_type'] == view['view_type'] for d in default_views):
                     view.pop('id')
                     view.pop('package_id')
                     view['resource_id'] = new['id']
