@@ -5,6 +5,7 @@ import ckan.lib.helpers as h
 import ckanext.resourceversions.logic.action as action
 from ckanext.resourceversions.logic.auth.delete import package_delete
 from ckanext.resourceversions.logic.auth.update import resource_update
+from ckanext.resourceversions.logic.auth.update import package_update
 
 
 class ResourceversionsPlugin(plugins.SingletonPlugin):
@@ -60,6 +61,17 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             new = toolkit.get_action('resource_create')(context, new_res_version)
             resource['newer_version'] = new['id']
             toolkit.get_action('resource_update')(context, resource)
+
+            # create same views
+            views = toolkit.get_action('resource_view_list')(context, {'id': resource['id']})
+            default_views = toolkit.get_action('resource_view_list')(context, {'id': new['id']})
+            for view in views:
+                if view['view_type'] != "gallery_view" and not any(d['view_type'] == view['view_type'] for d in default_views):
+                    view.pop('id')
+                    view.pop('package_id')
+                    view['resource_id'] = new['id']
+                    toolkit.get_action('resource_view_create')(context, view)
+
             h.flash_notice('New version has been created.')
 
     def before_delete(self, context, resource, resources):
@@ -101,6 +113,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         """Implements IAuthFunctions.get_auth_functions"""
         return {
             'package_delete': package_delete,
+            'package_update': package_update,
             'resource_update': resource_update
             }
 

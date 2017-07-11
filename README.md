@@ -1,57 +1,32 @@
-.. You should enable this project on travis-ci.org and coveralls.io to make
-   these badges work. The necessary Travis and Coverage config files have been
-   generated for you.
-
-.. image:: https://travis-ci.org/KatharinaSack/ckanext-resourceversions.svg?branch=master
-    :target: https://travis-ci.org/KatharinaSack/ckanext-resourceversions
-
-.. image:: https://coveralls.io/repos/KatharinaSack/ckanext-resourceversions/badge.svg
-  :target: https://coveralls.io/r/KatharinaSack/ckanext-resourceversions
-
-.. image:: https://pypip.in/download/ckanext-resourceversions/badge.svg
-    :target: https://pypi.python.org/pypi//ckanext-resourceversions/
-    :alt: Downloads
-
-.. image:: https://pypip.in/version/ckanext-resourceversions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-resourceversions/
-    :alt: Latest Version
-
-.. image:: https://pypip.in/py_versions/ckanext-resourceversions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-resourceversions/
-    :alt: Supported Python versions
-
-.. image:: https://pypip.in/status/ckanext-resourceversions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-resourceversions/
-    :alt: Development Status
-
-.. image:: https://pypip.in/license/ckanext-resourceversions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-resourceversions/
-    :alt: License
-
 =============
 ckanext-resourceversions
 =============
 
-.. Put a description of your extension here:
-   What does it do? What features does it have?
-   Consider including some screenshots or embedding a video!
+This extension allows you to create versions of resources. Each version
+becomes a new resource. Therefore, when uploading a new file or changing
+the link of a resource a new resource is being created. However, when changing
+any other information no new version is being created.
+
+![Versions](doc/img/versions.png)
+
+This extension must be used together with ckanext-thredds. Therefore, you can
+create versions of subsets and show relations between the original resource
+versions and the subset versions.
+
+![Versions](doc/img/subset_relations.png)
 
 
 ------------
 Requirements
 ------------
 
-For example, you might want to mention here which versions of CKAN this
-extension works with.
+This extension must be used together with ckanext-thredds. Moreover, each
+resource needs a field "newer_version" and "subset_of".
 
 
 ------------
 Installation
 ------------
-
-.. Add any additional install steps to the list below.
-   For example installing any non-Python dependencies or adding any required
-   config settings.
 
 To install ckanext-resourceversions:
 
