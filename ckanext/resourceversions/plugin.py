@@ -13,8 +13,9 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IResourceController, inherit=True)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IActions)
-    plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes, inherit=True)
+    # moved functions to ckanext-iauth
+    # plugins.implements(plugins.IAuthFunctions)
 
     # IConfigurer
 
