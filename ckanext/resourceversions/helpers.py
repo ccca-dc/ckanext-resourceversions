@@ -13,41 +13,45 @@ Base_c = base.c
 global_contains_field = []
 
 
-def get_versions(resource_id):
+def get_versions(package_id):
     ctx = {'model': model}
 
-    resource = logic.get_action('resource_show')(ctx, {'id': resource_id})
-    pkg = logic.get_action('package_show')(ctx, {'id': resource['package_id']})
-    resource_list = pkg['resources']
+    pkg = logic.get_action('package_show')(ctx, {'id': package_id})
 
-    versions = [resource]
+    versions = [pkg]
+
+    import json
 
     # get older versions
-    res_helper = resource.copy()
-    while res_helper is not None:
-        res_id = res_helper['id']
-        res_helper = None
-        for res in resource_list:
-            if 'newer_version' in res and res['newer_version'] == res_id:
-                versions.append(res)
-                res_helper = res.copy()
-                break
+    pkg_helper = pkg.copy()
+    while pkg_helper is not None:
+        pkg_id = pkg_helper['id']
+        pkg_helper = None
+
+        d = {'relation': 'has_version', 'id': str(pkg_id)}
+        search_results = tk.get_action('package_search')(ctx, {'fq': "relations:*%s*" % (json.dumps(str(d)))})
+
+        if search_results['count'] > 0:
+            versions.append(search_results['results'][0])
+            pkg_helper = search_results['results'][0].copy()
 
     # get newer versions
-    if 'newer_version' in resource and resource['newer_version'] != "":
-        newest_resource = tk.get_action('resource_show')(data_dict={'id': resource['newer_version']})
+    newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
+    if len(newer_versions) > 0:
+        newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
 
-        versions.insert(0, newest_resource)
+        versions.insert(0, newest_package)
 
         has_newer_version = True
         while has_newer_version is True:
             has_newer_version = False
-            for res in resource_list:
-                if 'newer_version' in newest_resource and newest_resource['newer_version'] == res['id']:
-                    versions.insert(0, res)
-                    newest_resource = res.copy()
-                    has_newer_version = True
-                    break
+
+            search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
+
+            if search_results['count'] > 0:
+                has_newer_version = True
+                newest_package = search_results['results'][0]
+                versions.insert(0, newest_package)
 
     return versions
 
@@ -80,6 +84,28 @@ def get_newest_version(resource_id):
                     break
 
     return newest_resource
+
+
+def get_version_number(package_id):
+    ctx = {'model': model}
+
+    version_number = 1
+    import json
+
+    helper_pkg_id = package_id
+    first_version = False
+    while not first_version:
+        d = {'relation': 'has_version', 'id': str(helper_pkg_id)}
+        search_results = tk.get_action('package_search')(ctx, {'fq': "relations:*%s*" % (json.dumps(str(d)))})
+
+        if search_results['count'] > 0:
+            helper_pkg_id = search_results['results'][0]['id']
+            version_number += 1
+        else:
+            first_version = True
+
+    return version_number
+
 
 def subset_has_version(subset_id, original_id):
     subset_versions = get_versions(subset_id)
