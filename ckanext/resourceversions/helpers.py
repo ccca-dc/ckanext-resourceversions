@@ -4,6 +4,7 @@ import ckan.lib.base as base
 import ckan.model as model
 import ckan.logic as logic
 import ckan.lib.helpers as h
+import json
 
 from ckan.logic.validators import isodate
 
@@ -20,8 +21,6 @@ def get_versions(package_id):
 
     versions = [pkg]
 
-    import json
-
     # get older versions
     pkg_helper = pkg.copy()
     while pkg_helper is not None:
@@ -36,22 +35,24 @@ def get_versions(package_id):
             pkg_helper = search_results['results'][0].copy()
 
     # get newer versions
-    newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
-    if len(newer_versions) > 0:
-        newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
+    if type(pkg['relations']) == list and type(pkg['relations'][0]) == dict:
+        newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
+        if len(newer_versions) > 0:
+            newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
 
-        versions.insert(0, newest_package)
+            versions.insert(0, newest_package)
 
-        has_newer_version = True
-        while has_newer_version is True:
-            has_newer_version = False
+            has_newer_version = True
+            while has_newer_version is True:
+                has_newer_version = False
 
-            search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
+                if 'relations' in newest_package and type(newest_package['relations']) == list and type(newest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
 
-            if search_results['count'] > 0:
-                has_newer_version = True
-                newest_package = search_results['results'][0]
-                versions.insert(0, newest_package)
+                    if len(search_results) > 0:
+                        has_newer_version = True
+                        newest_package = search_results['results'][0]
+                        versions.insert(0, newest_package)
 
     return versions
 
@@ -61,36 +62,35 @@ def package_resources_list(package_id):
     return logic.get_action('package_resources_list')(ctx, {'id': package_id})
 
 
-def get_newest_version(resource_id):
+def get_newest_version(package_id):
     ctx = {'model': model}
 
-    resource = logic.get_action('resource_show')(ctx, {'id': resource_id})
-    pkg = logic.get_action('package_show')(ctx, {'id': resource['package_id']})
-    resource_list = pkg['resources']
+    newest_package = logic.get_action('package_show')(ctx, {'id': package_id})
 
-    newest_resource = resource.copy()
+    # get newer versions
+    if 'relations' in newest_package and type(newest_package['relations']) == list and type(newest_package['relations'][0]) == dict:
+        newer_versions = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
+        if len(newer_versions) > 0:
+            newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
 
-    # get newest version
-    if 'newer_version' in resource and resource['newer_version'] != "":
-        newest_resource = tk.get_action('resource_show')(data_dict={'id': resource['newer_version']})
+            has_newer_version = True
+            while has_newer_version is True:
+                has_newer_version = False
 
-        has_newer_version = True
-        while has_newer_version is True:
-            has_newer_version = False
-            for res in resource_list:
-                if 'newer_version' in newest_resource and newest_resource['newer_version'] == res['id']:
-                    newest_resource = res.copy()
-                    has_newer_version = True
-                    break
+                if 'relations' in newest_package and type(newest_package['relations']) == list and type(newest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
 
-    return newest_resource
+                    if len(search_results) > 0:
+                        has_newer_version = True
+                        newest_package = search_results['results'][0]
+
+    return newest_package
 
 
 def get_version_number(package_id):
     ctx = {'model': model}
 
     version_number = 1
-    import json
 
     helper_pkg_id = package_id
     first_version = False
