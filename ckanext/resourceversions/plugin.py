@@ -76,7 +76,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
 
                 versions = helpers.get_versions(pkg['id'])
 
-                # TODO change to real version
+                # change name of new version
                 new_pkg_version['name'] = versions[-1]['name'] + '-v' + str(helpers.get_version_number(pkg['id'])+1).zfill(2)
 
                 # change the resource that will be updated to the old version
@@ -139,16 +139,15 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
     def get_helpers(self):
         return {
             'get_versions': helpers.get_versions,
-            'package_resources_list': helpers.package_resources_list,
             'get_newest_version': helpers.get_newest_version,
             'subset_has_version': helpers.subset_has_version,
             'get_version_number': helpers.get_version_number,
+            'version_has_subset': helpers.version_has_subset
             }
 
     # IActions
     def get_actions(self):
         actions = {
-            'package_resources_list': action.package_resources_list,
             'resource_version_number': action.resource_version_number
             }
         return actions

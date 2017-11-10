@@ -51,15 +51,10 @@ def get_versions(package_id):
 
                     if len(search_results) > 0:
                         has_newer_version = True
-                        newest_package = search_results['results'][0]
+                        newest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
                         versions.insert(0, newest_package)
 
     return versions
-
-
-def package_resources_list(package_id):
-    ctx = {'model': model}
-    return logic.get_action('package_resources_list')(ctx, {'id': package_id})
 
 
 def get_newest_version(package_id):
@@ -82,7 +77,7 @@ def get_newest_version(package_id):
 
                     if len(search_results) > 0:
                         has_newer_version = True
-                        newest_package = search_results['results'][0]
+                        newest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
 
     return newest_package
 
@@ -106,12 +101,24 @@ def get_version_number(package_id):
 
     return version_number
 
-
+# TODO remove
 def subset_has_version(subset_id, original_id):
     subset_versions = get_versions(subset_id)
 
     for subset in subset_versions:
         if 'subset_of' in subset and subset['subset_of'] == original_id:
+            return subset
+
+    return None
+
+
+def version_has_subset(subset_id, original_id):
+    subset_versions = get_versions(subset_id)
+
+    for subset in subset_versions:
+        search_results = [element for element in subset['relations'] if element['relation'] == 'is_part_of' and element['id'] == original_id]
+
+        if len(search_results) > 0:
             return subset
 
     return None
