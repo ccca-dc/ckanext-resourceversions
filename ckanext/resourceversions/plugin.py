@@ -8,6 +8,8 @@ from ckanext.resourceversions.logic.auth.delete import package_delete
 from ckanext.resourceversions.logic.auth.update import package_update
 import ckan.authz as authz
 import datetime
+import json
+import ckan.model as model
 
 
 class ResourceversionsPlugin(plugins.SingletonPlugin):
@@ -36,15 +38,6 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
 
         pkg = toolkit.get_action('package_show')(context, {'id': resource['package_id']})
 
-        try:
-            subsets = [element['id'] for element in pkg['relations'] if element['relation'] == 'is_part_of']
-        except:
-            subsets = []
-        try:
-            newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
-        except:
-            newer_versions = []
-
         # sysadmins should have the option to modify resource without version
         # therefore they can add a parameter "create_version"
         create_version = resource.get('create_version', True)
@@ -59,9 +52,9 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         global new_pkg_version
 
         # "None" if call comes from before_delete
-        # subsets should not create versions that are not from the original
-        if new_pkg_version is not None and (len(subsets) == 0) and not (authz.is_sysadmin(user) and create_version is False):
-            if (len(newer_versions) == 0) and pkg['private'] is False and ('upload' in new_res and new_res['upload'] != "" or "/" in new_res['url'] and current['url'] != new_res['url']):
+        # subsets and versions are already caught in auth function
+        if pkg['private'] is False or not (authz.is_sysadmin(user) and create_version is False):
+            if 'upload' in new_res and new_res['upload'] != "" or "/" in new_res['url'] and current['url'] != new_res['url']:
                 new_pkg_version = pkg.copy()
                 new_pkg_version.pop('id')
                 new_pkg_version.pop('resources')
@@ -85,10 +78,8 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
 
             else:
                 new_pkg_version = ""
-                # add resource clear
         else:
             new_pkg_version = ""
-            # only if sysadmin no resource clear
 
     def after_update(self, context, resource):
         # add new version to package
@@ -117,23 +108,6 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             #         toolkit.get_action('resource_view_create')(context, view)
 
             h.flash_notice('New version has been created.')
-
-    def before_delete(self, context, resource, resources):
-        res_delete = toolkit.get_action('resource_show')(context, {'id': resource['id']})
-        global new_res_version
-        new_res_version = ""
-
-        for r in resources:
-            # check if resource has versions
-            if 'newer_version' in r and r['newer_version'] == res_delete['id']:
-                # set new_res_version to None so that it does not create new version in update
-                new_res_version = None
-                if 'newer_version' in res_delete:
-                    r['newer_version'] = res_delete['newer_version']
-                else:
-                    r['newer_version'] = ""
-                toolkit.get_action('resource_update')(context, r)
-                break
 
     # ITemplateHelpers
     def get_helpers(self):
@@ -170,3 +144,33 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     controller='ckanext.resourceversions.controllers.subset_version:SubsetVersionController',
                     action='create_new_version_of_subset')
         return map
+
+
+class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
+    plugins.implements(plugins.IPackageController, inherit=True)
+
+    def after_delete(self, context, pkg_dict):
+        pkg = toolkit.get_action('package_show')(context, {'id': pkg_dict['id']})
+
+        rel = {'relation': 'has_version', 'id': str(pkg['id'])}
+        older_versions = toolkit.get_action('package_search')(context, {'fq': "relations:*%s*" % (json.dumps(str(rel)))})
+
+        global new_pkg_version
+        new_pkg_version = ""
+
+        # check if package has a newer version, then add newer_version['id'] to older_version['relation']
+        # otherwise remove older_version['relation']
+        if older_versions['count'] > 0:
+            older_version = older_versions['results'][0]
+            older_version['relations'].remove(rel)
+
+            try:
+                newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
+            except:
+                newer_versions = []
+
+            if len(newer_versions) > 0:
+                new_relation = {'relation': 'has_version', 'id': str(newer_versions[0])}
+                older_version['relations'].append(new_relation)
+            new_pkg_version = None
+            toolkit.get_action('package_update')(context, older_version)

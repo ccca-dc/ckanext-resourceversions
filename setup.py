@@ -81,6 +81,7 @@ setup(
     entry_points='''
         [ckan.plugins]
         resourceversions=ckanext.resourceversions.plugin:ResourceversionsPlugin
+        resourceversions_pkg=ckanext.resourceversions.plugin:ResourceversionsPackagePlugin
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
