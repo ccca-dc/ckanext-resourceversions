@@ -15,7 +15,7 @@ global_contains_field = []
 
 
 def get_versions(package_id):
-    ctx = {'model': model}
+    ctx = {'model': model, 'ignore_capacity_check': True}
 
     pkg = logic.get_action('package_show')(ctx, {'id': package_id})
 
@@ -28,14 +28,15 @@ def get_versions(package_id):
         pkg_helper = None
 
         d = {'relation': 'has_version', 'id': str(pkg_id)}
-        search_results = tk.get_action('package_search')(ctx, {'fq': "relations:*%s*" % (json.dumps(str(d)))})
+        # TODO remove include_private for older CKAN versions
+        search_results = tk.get_action('package_search')(ctx, {'include_private': True, 'rows': 1000, 'fq': "relations:*%s*" % (json.dumps(str(d)))})
 
         if search_results['count'] > 0:
             versions.append(search_results['results'][0])
             pkg_helper = search_results['results'][0].copy()
 
     # get newer versions
-    if type(pkg['relations']) == list and type(pkg['relations'][0]) == dict:
+    if 'relations' in pkg and type(pkg['relations']) == list and len(pkg['relations']) > 0 and type(pkg['relations'][0]) == dict:
         newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
         if len(newer_versions) > 0:
             newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
@@ -46,7 +47,7 @@ def get_versions(package_id):
             while has_newer_version is True:
                 has_newer_version = False
 
-                if 'relations' in newest_package and type(newest_package['relations']) == list and type(newest_package['relations'][0]) == dict:
+                if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and type(newest_package['relations'][0]) == dict:
                     search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
 
                     if len(search_results) > 0:
@@ -83,7 +84,7 @@ def get_newest_version(package_id):
 
 
 def get_version_number(package_id):
-    ctx = {'model': model}
+    ctx = {'model': model, 'ignore_capacity_check': True}
 
     version_number = 1
 

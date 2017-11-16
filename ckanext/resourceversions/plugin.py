@@ -54,7 +54,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         # "None" if call comes from before_delete
         # subsets and versions are already caught in auth function
         if pkg['private'] is False or not (authz.is_sysadmin(user) and create_version is False):
-            if 'upload' in new_res and new_res['upload'] != "" or "/" in new_res['url'] and current['url'] != new_res['url']:
+            if new_res.get('upload', '') != '' or "/" in new_res['url'] and current['url'] != new_res['url']:
                 new_pkg_version = pkg.copy()
                 new_pkg_version.pop('id')
                 new_pkg_version.pop('resources')
