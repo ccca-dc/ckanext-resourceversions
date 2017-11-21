@@ -27,9 +27,9 @@ def get_versions(package_id):
         pkg_id = pkg_helper['id']
         pkg_helper = None
 
-        d = {'relation': 'has_version', 'id': str(pkg_id)}
+        rel = {'relation': 'has_version', 'id': str(pkg_id)}
         # TODO remove include_private for older CKAN versions
-        search_results = tk.get_action('package_search')(ctx, {'include_private': True, 'rows': 1000, 'fq': "relations:*%s*" % (json.dumps(str(d)))})
+        search_results = tk.get_action('package_search')(ctx, {'include_private': True, 'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
 
         if search_results['count'] > 0:
             versions.append(search_results['results'][0])
@@ -64,7 +64,7 @@ def get_newest_version(package_id):
     newest_package = logic.get_action('package_show')(ctx, {'id': package_id})
 
     # get newer versions
-    if 'relations' in newest_package and type(newest_package['relations']) == list and type(newest_package['relations'][0]) == dict:
+    if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and  type(newest_package['relations'][0]) == dict:
         newer_versions = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
         if len(newer_versions) > 0:
             newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
@@ -91,8 +91,8 @@ def get_version_number(package_id):
     helper_pkg_id = package_id
     first_version = False
     while not first_version:
-        d = {'relation': 'has_version', 'id': str(helper_pkg_id)}
-        search_results = tk.get_action('package_search')(ctx, {'fq': "relations:*%s*" % (json.dumps(str(d)))})
+        rel = {'relation': 'has_version', 'id': str(helper_pkg_id)}
+        search_results = tk.get_action('package_search')(ctx, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
 
         if search_results['count'] > 0:
             helper_pkg_id = search_results['results'][0]['id']

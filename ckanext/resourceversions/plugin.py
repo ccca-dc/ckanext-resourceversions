@@ -53,29 +53,32 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
 
         # "None" if call comes from before_delete
         # subsets and versions are already caught in auth function
-        if pkg['private'] is False or not (authz.is_sysadmin(user) and create_version is False):
-            if new_res.get('upload', '') != '' or "/" in new_res['url'] and current['url'] != new_res['url']:
-                new_pkg_version = pkg.copy()
-                new_pkg_version.pop('id')
-                new_pkg_version.pop('resources')
-                new_pkg_version.pop('groups')
-                new_pkg_version.pop('revision_id')
+        if context.get('create_version', True) is True:
+            if pkg['private'] is False or not (authz.is_sysadmin(user) and create_version is False):
+                if new_res.get('upload', '') != '' or ("/" in new_res['url'] and current['url'] != new_res['url']):
+                    new_pkg_version = pkg.copy()
+                    new_pkg_version.pop('id')
+                    new_pkg_version.pop('resources')
+                    new_pkg_version.pop('groups')
+                    new_pkg_version.pop('revision_id')
 
-                # TODO change field name
-                new_pkg_version['iso_mdDate'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
+                    # TODO change field name
+                    new_pkg_version['iso_mdDate'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
 
-                new_res.pop('id')
-                new_pkg_version['resources'] = [new_res]
+                    new_res.pop('id')
+                    new_pkg_version['resources'] = [new_res]
 
-                versions = helpers.get_versions(pkg['id'])
+                    versions = helpers.get_versions(pkg['id'])
 
-                # change name of new version
-                new_pkg_version['name'] = versions[-1]['name'] + '-v' + str(helpers.get_version_number(pkg['id'])+1).zfill(2)
+                    # change name of new version
+                    new_pkg_version['name'] = versions[-1]['name'] + '-v' + str(helpers.get_version_number(pkg['id'])+1).zfill(2)
 
-                # change the resource that will be updated to the old version
-                resource.clear()
-                resource.update(current.copy())
+                    # change the resource that will be updated to the old version
+                    resource.clear()
+                    resource.update(current.copy())
 
+                else:
+                    new_pkg_version = ""
             else:
                 new_pkg_version = ""
         else:
