@@ -50,11 +50,12 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             new_res[key] = resource[key]
 
         global new_pkg_version
+        new_pkg_version = ""
 
         # "None" if call comes from before_delete
         # subsets and versions are already caught in auth function
-        if context.get('create_version', True) is True:
-            if pkg['private'] is False or not (authz.is_sysadmin(user) and create_version is False):
+        if not (authz.is_sysadmin(user) and create_version is False):
+            if context.get('create_version', True) is True and pkg['private'] is False:
                 if new_res.get('upload', '') != '' or ("/" in new_res['url'] and current['url'] != new_res['url']):
                     new_pkg_version = pkg.copy()
                     new_pkg_version.pop('id')
@@ -76,13 +77,6 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     # change the resource that will be updated to the old version
                     resource.clear()
                     resource.update(current.copy())
-
-                else:
-                    new_pkg_version = ""
-            else:
-                new_pkg_version = ""
-        else:
-            new_pkg_version = ""
 
     def after_update(self, context, resource):
         # add new version to package
@@ -156,7 +150,7 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
         pkg = toolkit.get_action('package_show')(context, {'id': pkg_dict['id']})
 
         rel = {'relation': 'has_version', 'id': str(pkg['id'])}
-        older_versions = toolkit.get_action('package_search')(context, {'fq': "relations:*%s*" % (json.dumps(str(rel)))})
+        older_versions = toolkit.get_action('package_search')(context, {'include_private': True, 'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
 
         global new_pkg_version
         new_pkg_version = ""

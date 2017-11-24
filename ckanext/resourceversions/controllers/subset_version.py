@@ -14,6 +14,9 @@ import ckan.authz as authz
 import ckan.lib.navl.dictization_functions as df
 from ckan.common import _
 from ckanext.resourceversions import helpers
+from ckanext.thredds.logic.action import get_ncss_subset_params
+from ckanext.thredds.logic.action import send_email
+from ckanext.thredds.helpers import get_query_params
 import datetime
 
 get_action = logic.get_action
@@ -73,76 +76,121 @@ class SubsetVersionController(base.BaseController):
         subset = tk.get_action('package_show')(context, {'id': subset_id})
         orig_pkg = tk.get_action('package_show')(context, {'id': orig_id})
 
-        subset_versions = helpers.get_versions(subset_id)
-        orig_versions = helpers.get_versions(orig_id)
+        try:
+            enqueue_job = tk.enqueue_job
+        except AttributeError:
+            from ckanext.rq.jobs import enqueue as enqueue_job
+        enqueue_job(create_new_version_of_subset_job, [subset, orig_pkg])
 
-        orig_index = orig_versions.index(orig_pkg)
+        h.flash_notice('Your version is being created. This might take a while, you will receive an E-Mail when your version is available.')
+        redirect(h.url_for(controller='package', action='read', id=subset_id))
 
-        orig_versions_newer = list(reversed(orig_versions[:orig_index]))
-        orig_versions_older = orig_versions[orig_index+1:]
 
-        newer_version = None
-        for ver in orig_versions_newer:
-            for sub_ver in subset_versions:
-                search_results = [element['id'] for element in sub_ver['relations'] if element['relation'] == 'is_part_of' and element['id'] == ver['id']]
-                if len(search_results) > 0:
-                    newer_version = sub_ver
-                    break
-            if newer_version is not None:
+def create_new_version_of_subset_job(subset, orig_pkg):
+    context = {'model': model, 'session': model.Session,
+               'user': c.user, 'auth_user_obj': c.userobj}
+
+    subset_versions = helpers.get_versions(subset['id'])
+    orig_versions = helpers.get_versions(orig_pkg['id'])
+
+    orig_index = orig_versions.index(orig_pkg)
+
+    orig_versions_newer = list(reversed(orig_versions[:orig_index]))
+    orig_versions_older = orig_versions[orig_index+1:]
+
+    newer_version = None
+    for ver in orig_versions_newer:
+        for sub_ver in subset_versions:
+            search_results = [element['id'] for element in sub_ver['relations'] if element['relation'] == 'is_part_of' and element['id'] == ver['id']]
+            if len(search_results) > 0:
+                newer_version = sub_ver
                 break
-
-        older_version = None
-        for ver in orig_versions_older:
-            for sub_ver in subset_versions:
-                search_results = [element['id'] for element in sub_ver['relations'] if element['relation'] == 'is_part_of' and element['id'] == ver['id']]
-                if len(search_results) > 0:
-                    older_version = sub_ver
-                    break
-            if older_version is not None:
-                break
-
-        # creating new package from the older version with few changes
-        if older_version is not None:
-            new_package = older_version.copy()
-        else:
-            new_package = newer_version.copy()
-        new_package.pop('id')
-        new_package['resources'] = []
-        new_package.pop('groups')
-        new_package.pop('revision_id')
-
-        new_package['name'] = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg['id'])).zfill(2)
-
-        new_package['iso_mdDate'] = new_package['metadata_created'] = new_package['metadata_modified'] = datetime.datetime.now()
-
-        new_package['relations'] = [{'relation': 'is_part_of', 'id': orig_id}]
         if newer_version is not None:
-            new_package['relations'].append({'relation': 'has_version', 'id': newer_version['id']})
+            break
 
-        # need to pop package otherwise it overwrites the current pkg
-        context.pop('package')
-
-        # append resources
-        resources = older_version['resources'] if older_version is not None else newer_version['resources']
-        for resource in resources:
-            resource['url'] = self.create_new_url(resource['url'], orig_id)
-            new_package['resources'].append(resource)
-
-        new_package = tk.get_action('package_create')(context, new_package)
-
-        # change has_version in older package
+    older_version = None
+    for ver in orig_versions_older:
+        for sub_ver in subset_versions:
+            search_results = [element['id'] for element in sub_ver['relations'] if element['relation'] == 'is_part_of' and element['id'] == ver['id']]
+            if len(search_results) > 0:
+                older_version = sub_ver
+                break
         if older_version is not None:
-            older_ver_relations = older_version['relations']
-            older_version['relations'] = [r for r in older_ver_relations if r['relation'] != 'has_version']
-            older_version['relations'].append({'relation': 'has_version', 'id': new_package['id']})
-            tk.get_action('package_update')(context, older_version)
+            break
 
-        h.flash_notice('New version has been created.')
-        redirect(h.url_for(controller='package', action='read',
-                               id=new_package['id']))
+    # get NetCDF resource of original package
+    orig_netcdf_resources = [res['id'] for res in orig_pkg['resources'] if res['format'].lower() == 'netcdf']
 
-    def create_new_url(self, old_url, new_id):
-        url_segments = old_url.split('/')
-        url_segments[4] = new_id
-        new_url = '/'.join(url_segments)
-        return new_url
+    metadata = tk.get_action('thredds_get_metadata_info')(context, {'id': orig_netcdf_resources[0]})
+    # get params from metadata
+    params = get_query_params(subset)
+    params['accept'] = 'netcdf'
+
+    # TODO make request
+    corrected_params, subset_hash = get_ncss_subset_params(orig_netcdf_resources[0], params, False, metadata)
+
+    return_dict = dict()
+
+    if 'error' not in corrected_params:
+
+        if subset_hash is not None:
+            search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq':
+                            'res_hash:%s' % (subset_hash)})
+
+            if search_results['count'] > 0:
+                return_dict['existing_package'] = search_results['results'][0]
+
+        if 'existing_package' not in return_dict or subset['private'].lower() is True:
+
+            # creating new package from the older version with few changes
+            if older_version is not None:
+                new_package = older_version.copy()
+            else:
+                new_package = newer_version.copy()
+            new_package.update(corrected_params)
+            new_package.pop('id')
+            new_package['resources'] = []
+            new_package.pop('groups')
+            new_package.pop('revision_id')
+
+            new_package['name'] = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg['id'])).zfill(2)
+
+            new_package['iso_mdDate'] = new_package['metadata_created'] = new_package['metadata_modified'] = datetime.datetime.now()
+
+            new_package['relations'] = [{'relation': 'is_part_of', 'id': orig_pkg['id']}]
+            if newer_version is not None:
+                new_package['relations'].append({'relation': 'has_version', 'id': newer_version['id']})
+
+            if subset_hash is not None:
+                new_package['hash'] = subset_hash
+
+            # append resources
+            resources = older_version['resources'] if older_version is not None else newer_version['resources']
+            for resource in resources:
+                resource['url'] = create_new_url(resource['url'], orig_pkg['id'])
+                new_package['resources'].append(resource)
+
+            new_package = tk.get_action('package_create')(context, new_package)
+            return_dict['new_package'] = new_package
+
+            # change has_version in older package
+            if older_version is not None:
+                older_ver_relations = older_version['relations']
+                older_version['relations'] = [r for r in older_ver_relations if r['relation'] != 'has_version']
+                older_version['relations'].append({'relation': 'has_version', 'id': new_package['id']})
+                tk.get_action('package_update')(context, older_version)
+
+    location = corrected_params['location']
+    error = corrected_params.get('error', None)
+    new_package = return_dict.get('new_package', None)
+    existing_package = return_dict.get('existing_package', None)
+
+    send_email(location, error, new_package, existing_package)
+
+
+def create_new_url(old_url, new_id):
+    url_segments = old_url.split('/')
+    print(url_segments)
+    url_segments[4] = new_id
+    new_url = '/'.join(url_segments)
+    return new_url

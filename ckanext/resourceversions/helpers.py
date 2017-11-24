@@ -73,7 +73,7 @@ def get_newest_version(package_id):
             while has_newer_version is True:
                 has_newer_version = False
 
-                if 'relations' in newest_package and type(newest_package['relations']) == list and type(newest_package['relations'][0]) == dict:
+                if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and type(newest_package['relations'][0]) == dict:
                     search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
 
                     if len(search_results) > 0:
@@ -92,7 +92,7 @@ def get_version_number(package_id):
     first_version = False
     while not first_version:
         rel = {'relation': 'has_version', 'id': str(helper_pkg_id)}
-        search_results = tk.get_action('package_search')(ctx, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
+        search_results = tk.get_action('package_search')(ctx, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % (rel)))})
 
         if search_results['count'] > 0:
             helper_pkg_id = search_results['results'][0]['id']
