@@ -71,18 +71,26 @@ class SubsetVersionController(base.BaseController):
 
     def create_new_version_of_subset(self, subset_id, orig_id):
         context = {'model': model, 'session': model.Session,
-                   'user': c.user}
+                   'user': c.user, 'ignore_capacity_check': True}
 
         subset = tk.get_action('package_show')(context, {'id': subset_id})
         orig_pkg = tk.get_action('package_show')(context, {'id': orig_id})
 
-        try:
-            enqueue_job = tk.enqueue_job
-        except AttributeError:
-            from ckanext.rq.jobs import enqueue as enqueue_job
-        enqueue_job(create_new_version_of_subset_job, [subset, orig_pkg])
+        new_ver_name = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg['id'])).zfill(2)
 
-        h.flash_notice('Your version is being created. This might take a while, you will receive an E-Mail when your version is available.')
+        # TODO remove include_private for older CKAN versions
+        search_results = tk.get_action('package_search')(context, {'include_private': True, 'rows': 10000, 'fq': "name:%s" % (new_ver_name)})
+
+        if search_results['count'] > 0:
+            h.flash_error('The new version could not be created as another package already has the name "%s". Please create a new subset from the original package.' % (new_ver_name))
+        else:
+            try:
+                enqueue_job = tk.enqueue_job
+            except AttributeError:
+                from ckanext.rq.jobs import enqueue as enqueue_job
+            enqueue_job(create_new_version_of_subset_job, [subset, orig_pkg])
+
+            h.flash_notice('Your version is being created. This might take a while, you will receive an E-Mail when your version is available.')
         redirect(h.url_for(controller='package', action='read', id=subset_id))
 
 

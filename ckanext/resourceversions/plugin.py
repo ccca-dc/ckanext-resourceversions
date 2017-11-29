@@ -45,9 +45,10 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             resource.pop('create_version')
 
         # added this so users can just pass parameters they want to have changed
-        new_res = current.copy()
-        for key in resource:
-            new_res[key] = resource[key]
+        # new_res = current.copy()
+        # for key in resource:
+        #     new_res[key] = resource[key]
+        new_res = resource.copy()
 
         global new_pkg_version
         new_pkg_version = ""
@@ -56,7 +57,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         # subsets and versions are already caught in auth function
         if not (authz.is_sysadmin(user) and create_version is False):
             if context.get('create_version', True) is True and pkg['private'] is False:
-                if new_res.get('upload', '') != '' or ("/" in new_res['url'] and current['url'] != new_res['url']):
+                if new_res.get('upload') != "" or new_res.get('clear_upload') != "" and new_res['url'] != current['url'] or (new_res.get('upload') == "" and new_res.get('clear_upload') == "" and new_res['url'] != current['url'] and current['url_type'] == ""):
                     new_pkg_version = pkg.copy()
                     new_pkg_version.pop('id')
                     new_pkg_version.pop('resources')
@@ -86,9 +87,10 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         if new_pkg_version != "":
             # need to pop package otherwise it overwrites the current pkg
             context.pop('package')
-            new_resource = new_pkg_version['resources'][0]
+            new_resource = new_pkg_version.pop('resources')[0]
             new_pkg_version = toolkit.get_action('package_create')(context, new_pkg_version)
             new_resource['package_id'] = new_pkg_version['id']
+            toolkit.get_action('resource_create')(context, new_resource)
 
             # TODO change this to append to relations
             pkg['relations'] = [{'relation': 'has_version', 'id': new_pkg_version['id']}]
