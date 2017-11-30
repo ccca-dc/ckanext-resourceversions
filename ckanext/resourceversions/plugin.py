@@ -75,6 +75,9 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     # change name of new version
                     new_pkg_version['name'] = versions[-1]['name'] + '-v' + str(helpers.get_version_number(pkg['id'])+1).zfill(2)
 
+                    # add relation
+                    new_pkg_version['relations'] = [{'relation': 'is_version_of', 'id': current['package_id']}]
+
                     # change the resource that will be updated to the old version
                     resource.clear()
                     resource.update(current.copy())
@@ -93,7 +96,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             toolkit.get_action('resource_create')(context, new_resource)
 
             # TODO change this to append to relations
-            pkg['relations'] = [{'relation': 'has_version', 'id': new_pkg_version['id']}]
+            pkg['relations'].append({'relation': 'has_version', 'id': new_pkg_version['id']})
             toolkit.get_action('package_update')(context, pkg)
 
             # # create same views
@@ -113,7 +116,6 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         return {
             'get_versions': helpers.get_versions,
             'get_newest_version': helpers.get_newest_version,
-            'subset_has_version': helpers.subset_has_version,
             'get_version_number': helpers.get_version_number,
             'version_has_subset': helpers.version_has_subset
             }
@@ -157,19 +159,30 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
         global new_pkg_version
         new_pkg_version = ""
 
+        try:
+            newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
+        except:
+            newer_versions = []
+
         # check if package has a newer version, then add newer_version['id'] to older_version['relation']
         # otherwise remove older_version['relation']
+        if len(newer_versions) > 0:
+            newer_version = toolkit.get_action('package_show')(context, {'id': newer_versions[0]})
+            print(newer_version)
+            newer_ver_relations = newer_version['relations']
+            newer_version['relations'] = [r for r in newer_ver_relations if r['relation'] != 'is_version_of']
+
+            if older_versions['count'] > 0:
+                older_version = older_versions['results'][0]
+                newer_version['relations'].append({'relation': 'is_version_of', 'id': older_version['id']})
+
+            toolkit.get_action('package_update')(context, newer_version)
+
         if older_versions['count'] > 0:
             older_version = older_versions['results'][0]
             older_version['relations'].remove(rel)
 
-            try:
-                newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
-            except:
-                newer_versions = []
-
             if len(newer_versions) > 0:
-                new_relation = {'relation': 'has_version', 'id': str(newer_versions[0])}
-                older_version['relations'].append(new_relation)
-            new_pkg_version = None
+                older_version['relations'].append({'relation': 'has_version', 'id': newer_versions[0]})
+
             toolkit.get_action('package_update')(context, older_version)

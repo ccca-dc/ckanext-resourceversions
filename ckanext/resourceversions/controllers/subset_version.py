@@ -168,6 +168,8 @@ def create_new_version_of_subset_job(subset, orig_pkg):
             new_package['relations'] = [{'relation': 'is_part_of', 'id': orig_pkg['id']}]
             if newer_version is not None:
                 new_package['relations'].append({'relation': 'has_version', 'id': newer_version['id']})
+            if older_version is not None:
+                new_package['relations'].append({'relation': 'is_version_of', 'id': older_version['id']})
 
             if subset_hash is not None:
                 new_package['hash'] = subset_hash
@@ -187,6 +189,12 @@ def create_new_version_of_subset_job(subset, orig_pkg):
                 older_version['relations'] = [r for r in older_ver_relations if r['relation'] != 'has_version']
                 older_version['relations'].append({'relation': 'has_version', 'id': new_package['id']})
                 tk.get_action('package_update')(context, older_version)
+
+            if newer_version is not None:
+                newer_ver_relations = newer_version['relations']
+                newer_version['relations'] = [r for r in newer_ver_relations if r['relation'] != 'is_version_of']
+                newer_version['relations'].append({'relation': 'is_version_of', 'id': new_package['id']})
+                tk.get_action('package_update')(context, newer_version)
 
     location = corrected_params['location']
     error = corrected_params.get('error', None)

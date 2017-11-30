@@ -84,33 +84,31 @@ def get_newest_version(package_id):
 
 
 def get_version_number(package_id):
-    ctx = {'model': model, 'ignore_capacity_check': True}
+    ctx = {'model': model}
+
+    pkg = tk.get_action('package_show')(ctx, {'id': package_id})
 
     version_number = 1
 
-    helper_pkg_id = package_id
-    first_version = False
-    while not first_version:
-        rel = {'relation': 'has_version', 'id': str(helper_pkg_id)}
-        search_results = tk.get_action('package_search')(ctx, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % (rel)))})
-
-        if search_results['count'] > 0:
-            helper_pkg_id = search_results['results'][0]['id']
+    # get newer versions
+    if 'relations' in pkg and type(pkg['relations']) == list and len(pkg['relations']) > 0 and type(pkg['relations'][0]) == dict:
+        older_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'is_version_of']
+        if len(older_versions) > 0:
+            oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
             version_number += 1
-        else:
-            first_version = True
+
+            first_version = False
+            while not first_version:
+                if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+                    older_versions = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
+
+                    if len(older_versions) > 0:
+                        oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
+                        version_number += 1
+                    else:
+                        first_version = True
 
     return version_number
-
-# TODO remove
-def subset_has_version(subset_id, original_id):
-    subset_versions = get_versions(subset_id)
-
-    for subset in subset_versions:
-        if 'subset_of' in subset and subset['subset_of'] == original_id:
-            return subset
-
-    return None
 
 
 def version_has_subset(subset_id, original_id):
