@@ -57,7 +57,8 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         # subsets and versions are already caught in auth function
         if not (authz.is_sysadmin(user) and create_version is False):
             if context.get('create_version', True) is True and pkg['private'] is False:
-                if new_res.get('upload') != "" or new_res.get('clear_upload') != "" and new_res['url'] != current['url'] or (new_res.get('upload') == "" and new_res.get('clear_upload') == "" and new_res['url'] != current['url'] and current['url_type'] == ""):
+                if (new_res.get('upload') != "" or new_res.get('clear_upload') != "" and new_res['url'] != current['url']
+                or (new_res.get('upload') == "" and new_res.get('clear_upload') == "" and new_res['url'] != current['url'] and current['url_type'] == "")):
                     new_pkg_version = pkg.copy()
                     new_pkg_version.pop('id')
                     new_pkg_version.pop('resources')
@@ -73,7 +74,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     versions = helpers.get_versions(pkg['id'])
 
                     # change name of new version
-                    new_pkg_version['name'] = versions[-1]['name'] + '-v' + str(helpers.get_version_number(pkg['id'])+1).zfill(2)
+                    new_pkg_version['name'] = "".join(versions[-1]['name'].split("-v")[:-1])
 
                     # add relation
                     new_pkg_version['relations'] = [{'relation': 'is_version_of', 'id': current['package_id']}]
@@ -116,6 +117,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         return {
             'get_versions': helpers.get_versions,
             'get_newest_version': helpers.get_newest_version,
+            'get_oldest_version': helpers.get_oldest_version,
             'get_version_number': helpers.get_version_number,
             'version_has_subset': helpers.version_has_subset
             }
@@ -186,3 +188,20 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
                 older_version['relations'].append({'relation': 'has_version', 'id': newer_versions[0]})
 
             toolkit.get_action('package_update')(context, older_version)
+
+    def after_update(self, context, pkg_dict):
+        from ckanext.mdedit.helpers import parse_json
+        pkg_dict['relations'] = parse_json(pkg_dict['relations'])
+        if len(pkg_dict.get('relations', [])) > 0:
+            newer_version_ids = [element['id'] for element in pkg_dict['relations'] if element['relation'] == 'has_version']
+            if len(newer_version_ids) > 0:
+                version = toolkit.get_action('package_show')(context, {'id': newer_version_ids[0]})
+            else:
+                version = helpers.get_oldest_version(pkg_dict['id'])
+
+            version_name = "".join(version['name'].split("-v")[:-1])
+            pkg_name = "".join(pkg_dict['name'].split("-v")[:-1])
+
+            if version_name != pkg_name:
+                version['name'] = pkg_name
+                toolkit.get_action('package_update')(context, version)

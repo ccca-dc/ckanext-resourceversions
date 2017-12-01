@@ -64,7 +64,7 @@ def get_newest_version(package_id):
     newest_package = logic.get_action('package_show')(ctx, {'id': package_id})
 
     # get newer versions
-    if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and  type(newest_package['relations'][0]) == dict:
+    if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and type(newest_package['relations'][0]) == dict:
         newer_versions = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
         if len(newer_versions) > 0:
             newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
@@ -83,10 +83,33 @@ def get_newest_version(package_id):
     return newest_package
 
 
-def get_version_number(package_id):
+def get_oldest_version(package_id):
     ctx = {'model': model}
 
-    pkg = tk.get_action('package_show')(ctx, {'id': package_id})
+    oldest_package = logic.get_action('package_show')(ctx, {'id': package_id})
+
+    # get newer versions
+    if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+        older_versions = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
+        if len(older_versions) > 0:
+            oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
+
+            has_older_version = True
+            while has_older_version is True:
+                has_older_version = False
+
+                if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
+
+                    if len(search_results) > 0:
+                        has_older_version = True
+                        oldest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
+
+    return oldest_package
+
+
+def get_version_number(pkg):
+    ctx = {'model': model}
 
     version_number = 1
 
@@ -107,6 +130,8 @@ def get_version_number(package_id):
                         version_number += 1
                     else:
                         first_version = True
+                else:
+                    first_version = True
 
     return version_number
 
