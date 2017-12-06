@@ -86,7 +86,7 @@ def get_newest_version(package_id):
 def get_oldest_version(package_id):
     ctx = {'model': model}
 
-    oldest_package = logic.get_action('package_show')(ctx, {'id': package_id})
+    oldest_package = tk.get_action('package_show')(ctx, {'id': package_id})
 
     # get newer versions
     if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:

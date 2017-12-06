@@ -205,3 +205,11 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
             if version_name != pkg_name:
                 version['name'] = pkg_name
                 toolkit.get_action('package_update')(context, version)
+
+    def before_search(self, search_params):
+        include_versions = search_params.pop('include_versions', False)
+        if not include_versions:
+            if search_params.get('fq', '') == '':
+                search_params['fq'] = "-relations:*%s*" % ('has_version')
+            elif 'has_version' not in search_params['fq']:
+                search_params['fq'] += (" AND -relations:*%s*" % ('has_version'))

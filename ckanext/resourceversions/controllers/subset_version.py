@@ -161,7 +161,7 @@ def create_new_version_of_subset_job(subset, orig_pkg):
             new_package.pop('groups')
             new_package.pop('revision_id')
 
-            new_package['name'] = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg['id'])).zfill(2)
+            new_package['name'] = subset['name'][:subset['name'].rfind("-v")]
 
             new_package['iso_mdDate'] = new_package['metadata_created'] = new_package['metadata_modified'] = datetime.datetime.now()
 
@@ -196,7 +196,7 @@ def create_new_version_of_subset_job(subset, orig_pkg):
                 newer_version['relations'].append({'relation': 'is_version_of', 'id': new_package['id']})
                 tk.get_action('package_update')(context, newer_version)
 
-    location = corrected_params['location']
+    location = corrected_params.get('location', None)
     error = corrected_params.get('error', None)
     new_package = return_dict.get('new_package', None)
     existing_package = return_dict.get('existing_package', None)
