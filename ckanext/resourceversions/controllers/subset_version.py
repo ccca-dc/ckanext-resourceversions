@@ -174,14 +174,23 @@ def create_new_version_of_subset_job(subset, orig_pkg):
             if subset_hash is not None:
                 new_package['hash'] = subset_hash
 
+            new_package = tk.get_action('package_create')(context, new_package)
+
             # append resources
             resources = older_version['resources'] if older_version is not None else newer_version['resources']
             for resource in resources:
-                resource['url'] = create_new_url(resource['url'], orig_pkg['id'])
-                new_package['resources'].append(resource)
+                if resource['url_type'] != 'upload' and resource['url'].endswith("/download"):
+                    new_resource = {'name': resource['name'], 'url': 'subset', 'format': resource['format'], 'anonymous_download': resource['anonymous_download']}
+                    new_resource['package_id'] = new_package['id']
+                    if subset_hash is not None and new_resource['format'].lower() == "netcdf":
+                        new_resource['hash'] = subset_hash
+                    new_resource = tk.get_action('resource_create')(context, new_resource)
 
-            new_package = tk.get_action('package_create')(context, new_package)
-            return_dict['new_package'] = new_package
+                    new_resource['url'] = create_new_url(resource['url'], new_resource['id'])
+                    context['create_version'] = False
+                    new_resource = tk.get_action('resource_update')(context, new_resource)
+
+            return_dict['new_package'] = tk.get_action('package_show')(context, {'id': new_package['id']})
 
             # change has_version in older package
             if older_version is not None:
