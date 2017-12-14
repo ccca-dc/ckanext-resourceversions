@@ -189,9 +189,12 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
             toolkit.get_action('package_update')(context, older_version)
 
     def after_update(self, context, pkg_dict):
-        from ckanext.mdedit.helpers import parse_json
-        pkg_dict['relations'] = parse_json(pkg_dict['relations'])
-        if len(pkg_dict.get('relations', [])) > 0:
+        try:
+            pkg_dict['relations'] = json.loads(pkg_dict['relations'])
+        except (ValueError, TypeError, AttributeError):
+            pkg_dict['relations'] = []
+
+        if len(pkg_dict['relations']) > 0:
             newer_version_ids = [element['id'] for element in pkg_dict['relations'] if element['relation'] == 'has_version']
             if len(newer_version_ids) > 0:
                 version = toolkit.get_action('package_show')(context, {'id': newer_version_ids[0]})

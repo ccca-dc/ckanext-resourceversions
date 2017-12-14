@@ -132,6 +132,7 @@ def create_new_version_of_subset_job(subset, orig_pkg):
     metadata = tk.get_action('thredds_get_metadata_info')(context, {'id': orig_netcdf_resources[0]})
     # get params from metadata
     params = get_query_params(subset)
+    params['var'] = str(','.join([var['name'] for var in subset['variables']]))
     params['accept'] = 'netcdf'
 
     # TODO make request
@@ -205,7 +206,7 @@ def create_new_version_of_subset_job(subset, orig_pkg):
                 newer_version['relations'].append({'relation': 'is_version_of', 'id': new_package['id']})
                 tk.get_action('package_update')(context, newer_version)
 
-    location = corrected_params.get('location', None)
+    location = [corrected_params.get('location', None)]
     error = corrected_params.get('error', None)
     new_package = return_dict.get('new_package', None)
     existing_package = return_dict.get('existing_package', None)
