@@ -2,18 +2,26 @@
 ckanext-resourceversions
 =============
 
-This extension allows you to create versions of resources. Each version
-becomes a new resource. Therefore, when uploading a new file or changing
-the link of a resource a new resource is being created. However, when changing
-any other information no new version is being created.
+This extension allows you to create versions of datasets. Each version
+becomes a new dataset. Therefore, when uploading a new file or changing
+the link of a resource a new dataset with a new resource is being created. However, when changing any other information no new version is being created.
 
 ![Versions](doc/img/versions.png)
 
 This extension must be used together with ckanext-thredds. Therefore, you can
-create versions of subsets and show relations between the original resource
+create versions of subsets and show relations between the original dataset
 versions and the subset versions.
 
 ![Versions](doc/img/subset_relations.png)
+
+#### API function:
+
+##### package_search(context, data_dict)
+
+Extends CKAN's package_search.
+
+**Additional Parameters:**
+* **include_versions** (bool) - includes all matching versions of a dataset if True, otherwise only the newest versions (optional, default: False)
 
 
 ------------

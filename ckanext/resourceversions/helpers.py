@@ -4,7 +4,6 @@ import ckan.lib.base as base
 import ckan.model as model
 import ckan.logic as logic
 import ckan.lib.helpers as h
-import json
 
 from ckan.logic.validators import isodate
 
@@ -15,25 +14,31 @@ global_contains_field = []
 
 
 def get_versions(package_id):
-    ctx = {'model': model, 'ignore_capacity_check': True}
+    ctx = {'model': model}
 
     pkg = logic.get_action('package_show')(ctx, {'id': package_id})
 
     versions = [pkg]
 
     # get older versions
-    pkg_helper = pkg.copy()
-    while pkg_helper is not None:
-        pkg_id = pkg_helper['id']
-        pkg_helper = None
+    if 'relations' in pkg and type(pkg['relations']) == list and len(pkg['relations']) > 0 and type(pkg['relations'][0]) == dict:
+        older_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'is_version_of']
+        if len(older_versions) > 0:
+            oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
 
-        rel = {'relation': 'has_version', 'id': str(pkg_id)}
-        # TODO remove include_private for older CKAN versions
-        search_results = tk.get_action('package_search')(ctx, {'include_private': True, 'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
+            versions.append(oldest_package)
 
-        if search_results['count'] > 0:
-            versions.append(search_results['results'][0])
-            pkg_helper = search_results['results'][0].copy()
+            has_older_version = True
+            while has_older_version:
+                has_older_version = False
+
+                if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
+
+                    if len(search_results) > 0:
+                        has_older_version = True
+                        oldest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
+                        versions.append(oldest_package)
 
     # get newer versions
     if 'relations' in pkg and type(pkg['relations']) == list and len(pkg['relations']) > 0 and type(pkg['relations'][0]) == dict:
@@ -88,7 +93,7 @@ def get_oldest_version(package_id):
 
     oldest_package = tk.get_action('package_show')(ctx, {'id': package_id})
 
-    # get newer versions
+    # get older versions
     if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
         older_versions = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
         if len(older_versions) > 0:

@@ -213,6 +213,6 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
         if not include_versions:
             if search_params.get('fq', '') == '':
                 search_params['fq'] = "-relations:*%s*" % ('has_version')
-            elif 'has_version' not in search_params['fq']:
+            else:
                 search_params['fq'] += (" AND -relations:*%s*" % ('has_version'))
         return search_params
