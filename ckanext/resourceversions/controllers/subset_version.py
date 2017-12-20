@@ -78,8 +78,8 @@ class SubsetVersionController(base.BaseController):
 
         new_ver_name = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg['id'])).zfill(2)
 
-        # TODO remove include_private for older CKAN versions
-        search_results = tk.get_action('package_search')(context, {'include_private': True, 'rows': 10000, 'fq': "name:%s" % (new_ver_name)})
+        # add include_private for newer CKAN versions
+        search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq': "name:%s" % (new_ver_name)})
 
         if search_results['count'] > 0:
             h.flash_error('The new version could not be created as another package already has the name "%s". Please create a new subset from the original package.' % (new_ver_name))

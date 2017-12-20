@@ -44,11 +44,8 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         if 'create_version' in resource:
             resource.pop('create_version')
 
-        # added this so users can just pass parameters they want to have changed
-        # new_res = current.copy()
-        # for key in resource:
-        #     new_res[key] = resource[key]
-        new_res = resource.copy()
+        new_res = current.copy()
+        new_res.update(resource.copy())
 
         global new_pkg_version
         new_pkg_version = ""
@@ -82,6 +79,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     # change the resource that will be updated to the old version
                     resource.clear()
                     resource.update(current.copy())
+
 
     def after_update(self, context, resource):
         # add new version to package
@@ -155,7 +153,9 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
         pkg = toolkit.get_action('package_show')(context, {'id': pkg_dict['id']})
 
         rel = {'relation': 'has_version', 'id': str(pkg['id'])}
-        older_versions = toolkit.get_action('package_search')(context, {'include_private': True, 'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
+        # older versions need ignore_capacity_check, newer versions need 'include_private': True in package_search
+        context['ignore_capacity_check'] = True
+        older_versions = toolkit.get_action('package_search')(context, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
 
         global new_pkg_version
         new_pkg_version = ""
