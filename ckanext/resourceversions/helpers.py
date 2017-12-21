@@ -65,8 +65,10 @@ def get_versions(package_id):
 
 def get_newest_version(package_id):
     ctx = {'model': model}
-
-    newest_package = logic.get_action('package_show')(ctx, {'id': package_id})
+    try:
+        newest_package = logic.get_action('package_show')(ctx, {'id': package_id})
+    except:
+        return None
 
     # get newer versions
     if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and type(newest_package['relations'][0]) == dict:
