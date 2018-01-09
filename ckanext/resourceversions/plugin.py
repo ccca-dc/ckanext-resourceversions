@@ -10,6 +10,9 @@ import ckan.authz as authz
 import datetime
 import json
 import ckan.model as model
+import ckan.lib.base as base
+
+redirect = base.redirect
 
 
 class ResourceversionsPlugin(plugins.SingletonPlugin):
@@ -54,8 +57,8 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
         # subsets and versions are already caught in auth function
         if not (authz.is_sysadmin(user) and create_version is False):
             if context.get('create_version', True) is True and pkg['private'] is False:
-                if (new_res.get('upload') != "" or new_res.get('clear_upload') != "" and new_res['url'] != current['url']
-                or (new_res.get('upload') == "" and new_res.get('clear_upload') == "" and new_res['url'] != current['url'] and current['url_type'] in ("", None))):
+                if (new_res.get('upload') not in ("", None) or new_res.get('clear_upload') != "" and new_res['url'] != current['url']
+                or (new_res.get('upload') in ("", None) and new_res.get('clear_upload') == "" and new_res['url'] != current['url'] and current['url_type'] in ("", None))):
                     new_pkg_version = pkg.copy()
                     new_pkg_version.pop('id')
                     new_pkg_version.pop('resources')
@@ -92,7 +95,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             new_resource = new_pkg_version.pop('resources')[0]
             new_pkg_version = toolkit.get_action('package_create')(context, new_pkg_version)
             new_resource['package_id'] = new_pkg_version['id']
-            toolkit.get_action('resource_create')(context, new_resource)
+            new_resource = toolkit.get_action('resource_create')(context, new_resource)
 
             pkg['relations'].append({'relation': 'has_version', 'id': new_pkg_version['id']})
             toolkit.get_action('package_update')(context, pkg)
