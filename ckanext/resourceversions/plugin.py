@@ -110,7 +110,9 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             #         view['resource_id'] = new['id']
             #         toolkit.get_action('resource_view_create')(context, view)
 
-            h.flash_notice('New version has been created.')
+            h.flash_notice('New version has been created. <b><a href=%s>Click here</a></b> to see the new version.' % (h.url_for(controller='package', action='resource_read', id=new_pkg_version['name'], resource_id=new_resource['id'])), allow_html=True)
+
+            return new_resource
 
     # ITemplateHelpers
     def get_helpers(self):
