@@ -76,7 +76,7 @@ class SubsetVersionController(base.BaseController):
         subset = tk.get_action('package_show')(context, {'id': subset_id})
         orig_pkg = tk.get_action('package_show')(context, {'id': orig_id})
 
-        new_ver_name = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg['id'])).zfill(2)
+        new_ver_name = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg)).zfill(2)
 
         # add include_private for newer CKAN versions
         search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq': "name:%s" % (new_ver_name)})
@@ -91,7 +91,7 @@ class SubsetVersionController(base.BaseController):
             enqueue_job(create_new_version_of_subset_job, [subset, orig_pkg])
 
             h.flash_notice('Your version is being created. This might take a while, you will receive an E-Mail when your version is available.')
-        redirect(h.url_for(controller='package', action='read', id=subset_id))
+        redirect(h.url_for(controller='package', action='read', id=subset['name']))
 
 
 def create_new_version_of_subset_job(subset, orig_pkg):
