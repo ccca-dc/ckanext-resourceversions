@@ -209,8 +209,8 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
             else:
                 version = helpers.get_oldest_version(pkg_dict['id'])
 
-            version_name = "".join(version['name'].split("-v")[:-1])
-            pkg_name = "".join(pkg_dict['name'].split("-v")[:-1])
+            version_name = "-v".join(version['name'].split("-v")[:-1])
+            pkg_name = "-v".join(pkg_dict['name'].split("-v")[:-1])
 
             if version_name != pkg_name:
                 version['name'] = pkg_name
