@@ -65,8 +65,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     new_pkg_version.pop('groups')
                     new_pkg_version.pop('revision_id')
 
-                    # TODO change field name
-                    new_pkg_version['iso_mdDate'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
+                    new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
 
                     new_res.pop('id')
                     new_res.pop('created', None)
@@ -165,7 +164,7 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
         rel = {'relation': 'has_version', 'id': str(pkg['id'])}
         # older versions need ignore_capacity_check, newer versions need 'include_private': True in package_search
         context['ignore_capacity_check'] = True
-        older_versions = toolkit.get_action('package_search')(context, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel))})
+        older_versions = toolkit.get_action('package_search')(context, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel)), 'include_versions': True})
 
         global new_pkg_version
         new_pkg_version = ""
