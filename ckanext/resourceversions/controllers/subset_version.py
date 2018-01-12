@@ -98,6 +98,8 @@ def create_new_version_of_subset_job(subset, orig_pkg):
     context = {'model': model, 'session': model.Session,
                'user': c.user, 'auth_user_obj': c.userobj}
 
+    user = tk.get_action('user_show')(context, {'id': c.user})
+
     subset_versions = helpers.get_versions(subset['id'])
     orig_versions = helpers.get_versions(orig_pkg['id'])
 
@@ -135,8 +137,7 @@ def create_new_version_of_subset_job(subset, orig_pkg):
     params['var'] = str(','.join([var['name'] for var in subset['variables']]))
     params['accept'] = 'netcdf'
 
-    # TODO make request
-    corrected_params, subset_hash = get_ncss_subset_params(orig_netcdf_resources[0], params, False, metadata)
+    corrected_params, subset_hash = get_ncss_subset_params(orig_netcdf_resources[0], params, user, False, metadata)
 
     return_dict = dict()
 
@@ -216,7 +217,6 @@ def create_new_version_of_subset_job(subset, orig_pkg):
 
 def create_new_url(old_url, new_id):
     url_segments = old_url.split('/')
-    print(url_segments)
     url_segments[4] = new_id
     new_url = '/'.join(url_segments)
     return new_url

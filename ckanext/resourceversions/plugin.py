@@ -69,6 +69,8 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     new_pkg_version['iso_mdDate'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
 
                     new_res.pop('id')
+                    new_res.pop('created', None)
+                    new_res.pop('last_modified', None)
                     new_pkg_version['resources'] = [new_res]
 
                     versions = helpers.get_versions(pkg['id'])
