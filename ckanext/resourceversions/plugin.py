@@ -74,7 +74,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     versions = helpers.get_versions(pkg['id'])
 
                     # change name of new version
-                    new_pkg_version['name'] = "".join(versions[-1]['name'].split("-v")[:-1])
+                    new_pkg_version['name'] = "-v".join(versions[-1]['name'].split("-v")[:-1])
 
                     # add relation
                     new_pkg_version['relations'] = [{'relation': 'is_version_of', 'id': current['package_id']}]
