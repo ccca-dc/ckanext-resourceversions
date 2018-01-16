@@ -66,9 +66,17 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     new_pkg_version.pop('revision_id')
 
                     # TODO change field name
-                    new_pkg_version['iso_mdDate'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
+                    new_pkg_version['issued'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
+                    # Just for transfer
+                    #new_pkg_version['issued'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = new_res['created']
 
                     new_res.pop('id')
+                    # auskommentieren fuer transfer
+                    new_res.pop('created')
+                    #nicht kommentieren danach :-)
+
+                    #just for transfer
+
                     new_pkg_version['resources'] = [new_res]
 
                     versions = helpers.get_versions(pkg['id'])
