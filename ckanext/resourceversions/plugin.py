@@ -62,7 +62,6 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     new_pkg_version = pkg.copy()
                     new_pkg_version.pop('id')
                     new_pkg_version.pop('resources')
-                    new_pkg_version.pop('groups')
                     new_pkg_version.pop('revision_id')
 
                     # TODO change field name
@@ -103,6 +102,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             # need to pop package otherwise it overwrites the current pkg
             context.pop('package')
             new_resource = new_pkg_version.pop('resources')[0]
+            # new_pkg_version contains name without "-v**", this will be added in the version_to_name validator
             new_pkg_version = toolkit.get_action('package_create')(context, new_pkg_version)
             new_resource['package_id'] = new_pkg_version['id']
             new_resource = toolkit.get_action('resource_create')(context, new_resource)
@@ -209,7 +209,7 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
     def after_update(self, context, pkg_dict):
         try:
             pkg_dict['relations'] = json.loads(pkg_dict['relations'])
-        except (ValueError, TypeError, AttributeError):
+        except (ValueError, TypeError, AttributeError, KeyError):
             pkg_dict['relations'] = []
 
         if len(pkg_dict['relations']) > 0:
