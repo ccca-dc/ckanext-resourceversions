@@ -55,7 +55,8 @@ class SubsetVersionController(base.BaseController):
             # create new URL with newest resource_id
             old_url = old_subset['url']
             newest_id = original_new_ver['id']
-            new_url = self.create_new_url(old_url, newest_id)
+            ckan_url = config.get('ckan.site_url', '')
+            new_url = ('%s/subset/%s/download' % (ckan_url, newest_id))
 
             new_subset = tk.get_action('resource_create')(context, {'name': old_subset['name'], 'url': new_url, 'package_id': old_subset['package_id'], 'format': old_subset['format'], 'subset_of': newest_id})
             subset_new_ver['newer_version'] = new_subset['id']
@@ -79,7 +80,7 @@ class SubsetVersionController(base.BaseController):
         new_ver_name = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg)).zfill(2)
 
         # add include_private for newer CKAN versions
-        search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq': "name:%s" % (new_ver_name)})
+        search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq': "name:%s" % (new_ver_name), 'include_versions': True})
 
         if search_results['count'] > 0:
             h.flash_error('The new version could not be created as another package already has the name "%s". Please create a new subset from the original package.' % (new_ver_name))
@@ -137,15 +138,18 @@ def create_new_version_of_subset_job(subset, orig_pkg):
     params['var'] = str(','.join([var['name'] for var in subset['variables']]))
     params['accept'] = 'netcdf'
 
-    corrected_params, subset_hash = get_ncss_subset_params(orig_netcdf_resources[0], params, user, False, metadata)
+    corrected_params, resource_params = get_ncss_subset_params(orig_netcdf_resources[0], params, user, False, metadata)
 
     return_dict = dict()
 
-    if 'error' not in corrected_params:
+    location = None
 
-        if subset_hash is not None:
+    if 'error' not in corrected_params:
+        location = [corrected_params['location']]
+
+        if resource_params.get('hash', None) is not None:
             search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq':
-                            'res_hash:%s' % (subset_hash)})
+                            'res_hash:%s' % (resource_params.get('hash', None)), 'include_versions': True})
 
             if search_results['count'] > 0:
                 return_dict['existing_package'] = search_results['results'][0]
@@ -173,9 +177,6 @@ def create_new_version_of_subset_job(subset, orig_pkg):
             if older_version is not None:
                 new_package['relations'].append({'relation': 'is_version_of', 'id': older_version['id']})
 
-            if subset_hash is not None:
-                new_package['hash'] = subset_hash
-
             new_package = tk.get_action('package_create')(context, new_package)
 
             # append resources
@@ -184,11 +185,28 @@ def create_new_version_of_subset_job(subset, orig_pkg):
                 if resource['url_type'] != 'upload' and resource['url'].endswith("/download"):
                     new_resource = {'name': resource['name'], 'url': 'subset', 'format': resource['format'], 'anonymous_download': resource['anonymous_download']}
                     new_resource['package_id'] = new_package['id']
-                    if subset_hash is not None and new_resource['format'].lower() == "netcdf":
-                        new_resource['hash'] = subset_hash
+
+                    if resource['format'].lower() == 'netcdf':
+                        if resource_params is not None:
+                            new_resource['hash'] = resource_params.get('hash', None)
+                        if resource_params is not None:
+                            new_resource['size'] = resource_params.get('size', None)
+                    else:
+                        params['accept'] = resource['format'].lower()
+                        corrected_params_new_res, resource_params_new_res = get_ncss_subset_params(orig_netcdf_resources[0], params, user, True, metadata)
+
+                        if "error" not in corrected_params_new_res:
+                            location.append(corrected_params_new_res['location'])
+
+                            if resource_params_new_res.get('hash', None) is not None:
+                                new_resource['hash'] = resource_params_new_res.get('hash',None)
+                            if resource_params_new_res.get('hash', None) is not None:
+                                new_resource['size'] = resource_params_new_res.get('size',None)
+
                     new_resource = tk.get_action('resource_create')(context, new_resource)
 
-                    new_resource['url'] = create_new_url(resource['url'], new_resource['id'])
+                    ckan_url = config.get('ckan.site_url', '')
+                    new_resource['url'] = ('%s/subset/%s/download' % (ckan_url, new_resource['id']))
                     context['create_version'] = False
                     new_resource = tk.get_action('resource_update')(context, new_resource)
 
@@ -207,16 +225,8 @@ def create_new_version_of_subset_job(subset, orig_pkg):
                 newer_version['relations'].append({'relation': 'is_version_of', 'id': new_package['id']})
                 tk.get_action('package_update')(context, newer_version)
 
-    location = [corrected_params.get('location', None)]
     error = corrected_params.get('error', None)
     new_package = return_dict.get('new_package', None)
     existing_package = return_dict.get('existing_package', None)
 
-    send_email(location, error, new_package, existing_package)
-
-
-def create_new_url(old_url, new_id):
-    url_segments = old_url.split('/')
-    url_segments[4] = new_id
-    new_url = '/'.join(url_segments)
-    return new_url
+    send_email(new_resource['id'], user, location[0], error, new_package, existing_package)
