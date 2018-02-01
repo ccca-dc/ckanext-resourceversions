@@ -89,17 +89,17 @@ class SubsetVersionController(base.BaseController):
                 enqueue_job = tk.enqueue_job
             except AttributeError:
                 from ckanext.rq.jobs import enqueue as enqueue_job
-            enqueue_job(create_new_version_of_subset_job, [subset, orig_pkg])
+            enqueue_job(create_new_version_of_subset_job, [c.user, subset, orig_pkg])
 
             h.flash_notice('Your version is being created. This might take a while, you will receive an E-Mail when your version is available.')
         redirect(h.url_for(controller='package', action='read', id=subset['name']))
 
 
-def create_new_version_of_subset_job(subset, orig_pkg):
+def create_new_version_of_subset_job(user, subset, orig_pkg):
     context = {'model': model, 'session': model.Session,
-               'user': c.user, 'auth_user_obj': c.userobj}
+               'user': user, 'auth_user_obj': c.userobj}
 
-    user = tk.get_action('user_show')(context, {'id': c.user})
+    user = tk.get_action('user_show')(context, {'id': user})
 
     subset_versions = helpers.get_versions(subset['id'])
     orig_versions = helpers.get_versions(orig_pkg['id'])
@@ -154,7 +154,7 @@ def create_new_version_of_subset_job(subset, orig_pkg):
             if search_results['count'] > 0:
                 return_dict['existing_package'] = search_results['results'][0]
 
-        if 'existing_package' not in return_dict or subset['private'].lower() is True:
+        if 'existing_package' not in return_dict or subset['private'] is True:
 
             # creating new package from the older version with few changes
             if older_version is not None:
