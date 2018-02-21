@@ -74,12 +74,15 @@ class SubsetVersionController(base.BaseController):
         context = {'model': model, 'session': model.Session,
                    'user': c.user, 'ignore_capacity_check': True}
 
+        h.check_access('package_update', {'id': subset_id})
+
         subset = tk.get_action('package_show')(context, {'id': subset_id})
         orig_pkg = tk.get_action('package_show')(context, {'id': orig_id})
 
         new_ver_name = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg)).zfill(2)
 
         # add include_private for newer CKAN versions
+        # ATTENTION deleted but not purged datasets cannot be found!
         search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq': "name:%s" % (new_ver_name), 'include_versions': True})
 
         if search_results['count'] > 0:
