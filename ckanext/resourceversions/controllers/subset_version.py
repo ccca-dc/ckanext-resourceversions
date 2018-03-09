@@ -150,7 +150,7 @@ def create_new_version_of_subset_job(user, subset, orig_pkg):
     if 'error' not in corrected_params:
         location = [corrected_params['location']]
 
-        if resource_params.get('hash', None) is not None:
+        if resource_params is not None and resource_params.get('hash', None) is not None:
             search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq':
                             'res_hash:%s' % (resource_params.get('hash', None)), 'include_versions': True})
 

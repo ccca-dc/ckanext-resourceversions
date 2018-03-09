@@ -14,7 +14,7 @@ global_contains_field = []
 
 
 def get_versions(package_id):
-    ctx = {'model': model}
+    ctx = {'model': model, 'ignore_auth': True}
 
     pkg = logic.get_action('package_show')(ctx, {'id': package_id})
 
