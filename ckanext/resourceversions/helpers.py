@@ -13,79 +13,143 @@ Base_c = base.c
 global_contains_field = []
 
 
-def get_versions(resource_id):
-    ctx = {'model': model}
+def get_versions(package_id):
+    ctx = {'model': model, 'ignore_auth': True}
 
-    resource = logic.get_action('resource_show')(ctx, {'id': resource_id})
-    pkg = logic.get_action('package_show')(ctx, {'id': resource['package_id']})
-    resource_list = pkg['resources']
+    pkg = logic.get_action('package_show')(ctx, {'id': package_id})
 
-    versions = [resource]
+    versions = [pkg]
 
     # get older versions
-    res_helper = resource.copy()
-    while res_helper is not None:
-        res_id = res_helper['id']
-        res_helper = None
-        for res in resource_list:
-            if 'newer_version' in res and res['newer_version'] == res_id:
-                versions.append(res)
-                res_helper = res.copy()
-                break
+    if 'relations' in pkg and type(pkg['relations']) == list and len(pkg['relations']) > 0 and type(pkg['relations'][0]) == dict:
+        older_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'is_version_of']
+        if len(older_versions) > 0:
+            oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
+
+            versions.append(oldest_package)
+
+            has_older_version = True
+            while has_older_version:
+                has_older_version = False
+
+                if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
+
+                    if len(search_results) > 0:
+                        has_older_version = True
+                        oldest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
+                        versions.append(oldest_package)
 
     # get newer versions
-    if 'newer_version' in resource and resource['newer_version'] != "":
-        newest_resource = tk.get_action('resource_show')(data_dict={'id': resource['newer_version']})
+    if 'relations' in pkg and type(pkg['relations']) == list and len(pkg['relations']) > 0 and type(pkg['relations'][0]) == dict:
+        newer_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'has_version']
+        if len(newer_versions) > 0:
+            newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
 
-        versions.insert(0, newest_resource)
+            versions.insert(0, newest_package)
 
-        has_newer_version = True
-        while has_newer_version is True:
-            has_newer_version = False
-            for res in resource_list:
-                if 'newer_version' in newest_resource and newest_resource['newer_version'] == res['id']:
-                    versions.insert(0, res)
-                    newest_resource = res.copy()
-                    has_newer_version = True
-                    break
+            has_newer_version = True
+            while has_newer_version is True:
+                has_newer_version = False
+
+                if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and type(newest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
+
+                    if len(search_results) > 0:
+                        has_newer_version = True
+                        newest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
+                        versions.insert(0, newest_package)
 
     return versions
 
 
-def package_resources_list(package_id):
+def get_newest_version(package_id):
     ctx = {'model': model}
-    return logic.get_action('package_resources_list')(ctx, {'id': package_id})
+    try:
+        newest_package = logic.get_action('package_show')(ctx, {'id': package_id})
+    except:
+        return None
+
+    # get newer versions
+    if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and type(newest_package['relations'][0]) == dict:
+        newer_versions = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
+        if len(newer_versions) > 0:
+            newest_package = tk.get_action('package_show')(ctx, {'id': newer_versions[0]})
+
+            has_newer_version = True
+            while has_newer_version is True:
+                has_newer_version = False
+
+                if 'relations' in newest_package and type(newest_package['relations']) == list and len(newest_package['relations']) > 0 and type(newest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in newest_package['relations'] if element['relation'] == 'has_version']
+
+                    if len(search_results) > 0:
+                        has_newer_version = True
+                        newest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
+
+    return newest_package
 
 
-def get_newest_version(resource_id):
+def get_oldest_version(package_id):
     ctx = {'model': model}
 
-    resource = logic.get_action('resource_show')(ctx, {'id': resource_id})
-    pkg = logic.get_action('package_show')(ctx, {'id': resource['package_id']})
-    resource_list = pkg['resources']
+    oldest_package = tk.get_action('package_show')(ctx, {'id': package_id})
 
-    newest_resource = resource.copy()
+    # get older versions
+    if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+        older_versions = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
+        if len(older_versions) > 0:
+            oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
 
-    # get newest version
-    if 'newer_version' in resource and resource['newer_version'] != "":
-        newest_resource = tk.get_action('resource_show')(data_dict={'id': resource['newer_version']})
+            has_older_version = True
+            while has_older_version is True:
+                has_older_version = False
 
-        has_newer_version = True
-        while has_newer_version is True:
-            has_newer_version = False
-            for res in resource_list:
-                if 'newer_version' in newest_resource and newest_resource['newer_version'] == res['id']:
-                    newest_resource = res.copy()
-                    has_newer_version = True
-                    break
+                if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+                    search_results = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
 
-    return newest_resource
+                    if len(search_results) > 0:
+                        has_older_version = True
+                        oldest_package = tk.get_action('package_show')(ctx, {'id': search_results[0]})
 
-def subset_has_version(subset_id, original_id):
+    return oldest_package
+
+
+def get_version_number(pkg):
+    ctx = {'model': model}
+
+    version_number = 1
+
+    # get newer versions
+    if 'relations' in pkg and type(pkg['relations']) == list and len(pkg['relations']) > 0 and type(pkg['relations'][0]) == dict:
+        older_versions = [element['id'] for element in pkg['relations'] if element['relation'] == 'is_version_of']
+        if len(older_versions) > 0:
+            oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
+            version_number += 1
+
+            first_version = False
+            while not first_version:
+                if 'relations' in oldest_package and type(oldest_package['relations']) == list and len(oldest_package['relations']) > 0 and type(oldest_package['relations'][0]) == dict:
+                    older_versions = [element['id'] for element in oldest_package['relations'] if element['relation'] == 'is_version_of']
+
+                    if len(older_versions) > 0:
+                        oldest_package = tk.get_action('package_show')(ctx, {'id': older_versions[0]})
+                        version_number += 1
+                    else:
+                        first_version = True
+                else:
+                    first_version = True
+
+    return version_number
+
+
+def version_has_subset(subset_id, original_id):
     subset_versions = get_versions(subset_id)
 
     for subset in subset_versions:
-        if 'subset_of' in subset and subset['subset_of'] == original_id:
+        search_results = [element for element in subset['relations'] if element['relation'] == 'is_part_of' and element['id'] == original_id]
+
+        if len(search_results) > 0:
             return subset
 
     return None
