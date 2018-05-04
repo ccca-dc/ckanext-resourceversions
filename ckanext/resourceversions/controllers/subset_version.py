@@ -232,4 +232,4 @@ def create_new_version_of_subset_job(user, subset, orig_pkg):
     new_package = return_dict.get('new_package', None)
     existing_package = return_dict.get('existing_package', None)
 
-    send_email(orig_netcdf_resources[0], user, location[0], error, new_package, existing_package)
+    send_email(orig_netcdf_resources[0], user, (location[0] if location is not None else None), error, new_package, existing_package)
