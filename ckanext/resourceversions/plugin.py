@@ -102,6 +102,8 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             # need to pop package otherwise it overwrites the current pkg
             context.pop('package')
             new_resource = new_pkg_version.pop('resources')[0]
+            new_pkg_version['uri'] = ''
+            new_resource.pop('uri', None)
             # new_pkg_version contains name without "-v**", this will be added in the version_to_name validator
             new_pkg_version = toolkit.get_action('package_create')(context, new_pkg_version)
             new_resource['package_id'] = new_pkg_version['id']
