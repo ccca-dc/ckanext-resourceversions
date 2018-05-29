@@ -169,6 +169,7 @@ def create_new_version_of_subset_job(user, subset, orig_pkg):
             new_package['resources'] = []
             new_package.pop('groups')
             new_package.pop('revision_id')
+            new_package.pop('uri', None)
 
             new_package['name'] = subset['name'][:subset['name'].rfind("-v")]
 

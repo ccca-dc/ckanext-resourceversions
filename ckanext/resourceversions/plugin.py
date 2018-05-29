@@ -63,6 +63,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     new_pkg_version.pop('id')
                     new_pkg_version.pop('resources')
                     new_pkg_version.pop('revision_id')
+                    new_pkg_version.pop('uri', None)
 
                     # TODO change field name
                     new_pkg_version['issued'] = new_pkg_version['metadata_created'] = new_pkg_version['metadata_modified'] = datetime.datetime.now()
@@ -77,6 +78,7 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
                     #just for transfer
 
                     new_res.pop('last_modified', None)
+                    new_res.pop('uri', None)
 
                     new_pkg_version['resources'] = [new_res]
 
@@ -102,8 +104,6 @@ class ResourceversionsPlugin(plugins.SingletonPlugin):
             # need to pop package otherwise it overwrites the current pkg
             context.pop('package')
             new_resource = new_pkg_version.pop('resources')[0]
-            new_pkg_version['uri'] = ''
-            new_resource.pop('uri', None)
             # new_pkg_version contains name without "-v**", this will be added in the version_to_name validator
             new_pkg_version = toolkit.get_action('package_create')(context, new_pkg_version)
             new_resource['package_id'] = new_pkg_version['id']
