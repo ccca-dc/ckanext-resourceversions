@@ -234,5 +234,6 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
             if search_params.get('fq', '') == '':
                 search_params['fq'] = "-relations:*%s*" % ('has_version')
             else:
-                search_params['fq'] += (" AND -relations:*%s*" % ('has_version'))
+                #search_params['fq'] += (" AND -relations:*%s*" % ('has_version'))
+                search_params['fq'] += (" -relations:*%s*" % ('has_version'))
         return search_params
