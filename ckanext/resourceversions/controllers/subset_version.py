@@ -133,7 +133,7 @@ def create_new_version_of_subset_job(user, subset, orig_pkg):
             break
 
     # get NetCDF resource of original package
-    orig_netcdf_resources = [res['id'] for res in orig_pkg['resources'] if res['format'].lower() == 'netcdf']
+    orig_netcdf_resources = [res['id'] for res in orig_pkg['resources'] if res['format'].lower() in ('netcdf', 'application/x-netcdf')]
 
     metadata = tk.get_action('thredds_get_metadata_info')(context, {'id': orig_netcdf_resources[0]})
     # get params from metadata
