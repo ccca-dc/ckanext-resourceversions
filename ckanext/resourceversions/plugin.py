@@ -173,9 +173,7 @@ class ResourceversionsPackagePlugin(plugins.SingletonPlugin):
         pkg = toolkit.get_action('package_show')(context, {'id': pkg_dict['id']})
 
         rel = {'relation': 'has_version', 'id': str(pkg['id'])}
-        # older versions need ignore_capacity_check, newer versions need 'include_private': True in package_search
-        context['ignore_capacity_check'] = True
-        older_versions = toolkit.get_action('package_search')(context, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel)), 'include_versions': True})
+        older_versions = toolkit.get_action('package_search')(context, {'rows': 10000, 'fq': "extras_relations:%s" % (json.dumps('%s' % rel)), 'include_versions': True, 'include_private': True})
 
         global new_pkg_version
         new_pkg_version = ""

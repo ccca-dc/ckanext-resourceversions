@@ -72,7 +72,7 @@ class SubsetVersionController(base.BaseController):
 
     def create_new_version_of_subset(self, subset_id, orig_id):
         context = {'model': model, 'session': model.Session,
-                   'user': c.user, 'ignore_capacity_check': True}
+                   'user': c.user}
 
         h.check_access('package_update', {'id': subset_id})
 
@@ -81,9 +81,8 @@ class SubsetVersionController(base.BaseController):
 
         new_ver_name = subset['name'][:subset['name'].rfind("-v") + 2] + str(helpers.get_version_number(orig_pkg)).zfill(2)
 
-        # add include_private for newer CKAN versions
         # ATTENTION deleted but not purged datasets cannot be found!
-        search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq': "name:%s" % (new_ver_name), 'include_versions': True})
+        search_results = tk.get_action('package_search')(context, {'rows': 10000, 'fq': "name:%s" % (new_ver_name), 'include_versions': True, 'include_private': True})
 
         if search_results['count'] > 0:
             h.flash_error('The new version could not be created as another package already has the name "%s". Please create a new subset from the original package.' % (new_ver_name))
